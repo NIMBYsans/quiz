@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embeddable Interactive Quiz Maker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for High Score Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+        .animate-slide-up {
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom Scrollbar for Builder Options */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Header Navigation -->
+    <header id="mainHeader" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                    <i data-lucide="help-circle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-none">QuizCraft</h1>
+                    <span class="text-xs font-medium text-slate-500">Interactive Quiz Engine</span>
+                </div>
+            </div>
+
+            <!-- Mode Switcher & Controls -->
+            <div id="navControls" class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Preset Selector -->
+                <div class="relative inline-block text-left">
+                    <select id="presetSelect" onchange="loadPresetQuiz(this.value)" class="bg-slate-100 border border-slate-200 text-slate-700 text-xs sm:text-sm rounded-lg px-3 py-2 font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                        <option value="" disabled selected>⚡ Load Sample Quiz</option>
+                        <option value="general">🌍 General Knowledge</option>
+                        <option value="tech">💻 Web Dev & Tech</option>
+                    </select>
+                </div>
+
+                <!-- Mode Toggle Switch -->
+                <div class="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center">
+                    <button id="btnModeBuild" onclick="switchMode('builder')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-white text-slate-900 shadow-xs">
+                        <i data-lucide="edit-3" class="w-4 h-4 text-brand-600"></i>
+                        <span>Builder</span>
+                    </button>
+                    <button id="btnModeTake" onclick="switchMode('taker')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900">
+                        <i data-lucide="play" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Preview / Take</span>
+                    </button>
+                </div>
+
+                <!-- Embed & JSON Export Modal Trigger -->
+                <button onclick="openEmbedModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center space-x-2 shadow-sm transition-colors">
+                    <i data-lucide="code" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Embed / Export</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- VIEW 1: QUIZ BUILDER MODE -->
+        <section id="builderModeView" class="animate-fade-in space-y-6">
+            <!-- Quiz Global Settings Card -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div class="flex-grow">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Quiz Title</label>
+                        <input type="text" id="quizTitleInput" placeholder="Enter quiz title..." class="w-full text-xl sm:text-2xl font-bold text-slate-900 border-b-2 border-transparent hover:border-slate-300 focus:border-brand-600 focus:outline-none transition-colors py-1 bg-transparent" value="General Knowledge Challenge">
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Pass Score (%)</label>
+                            <input type="number" id="quizPassScoreInput" min="0" max="100" value="70" class="w-20 border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-center font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description / Instructions</label>
+                    <textarea id="quizDescInput" rows="2" placeholder="Briefly describe what this quiz is about..." class="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none">Test your knowledge with these fun questions! Answer as accurately as you can.</textarea>
+                </div>
+            </div>
+
+            <!-- Question Items List -->
+            <div id="questionsContainer" class="space-y-6">
+                <!-- Question Cards dynamically injected here -->
+            </div>
+
+            <!-- Add Question Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-100/80 border border-dashed border-slate-300 rounded-2xl p-4 sm:p-6">
+                <div class="flex items-center space-x-2 text-slate-600">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i>
+                    <span class="font-medium text-sm">Add Question Type:</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="addQuestion('mcq')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-xs flex items-center space-x-1.5 transition-all hover:border-brand-300">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-brand-600"></i>
+                        <span>Multiple Choice</span>
+                    </button>
+                    <button onclick="addQuestion('checkbox')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-xs flex items-center space-x-1.5 transition-all hover:border-brand-300">
+                        <i data-lucide="check-square" class="w-4 h-4 text-indigo-600"></i>
+                        <span>Multiple Select</span>
+                    </button>
+                    <button onclick="addQuestion('tf')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-xs flex items-center space-x-1.5 transition-all hover:border-brand-300">
+                        <i data-lucide="toggle-left" class="w-4 h-4 text-emerald-600"></i>
+                        <span>True / False</span>
+                    </button>
+                    <button onclick="addQuestion('text')" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-xs flex items-center space-x-1.5 transition-all hover:border-brand-300">
+                        <i data-lucide="type" class="w-4 h-4 text-amber-600"></i>
+                        <span>Short Answer</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: INTERACTIVE QUIZ TAKER / PREVIEW MODE -->
+        <section id="takerModeView" class="hidden max-w-3xl mx-auto space-y-6 animate-fade-in">
+
+            <!-- Quiz Start Screen -->
+            <div id="quizStartCard" class="bg-white rounded-3xl p-8 border border-slate-200 shadow-lg text-center space-y-6">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                    <i data-lucide="help-circle" class="w-10 h-10"></i>
+                </div>
+                <div class="space-y-2">
+                    <h2 id="previewQuizTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900">Quiz Title</h2>
+                    <p id="previewQuizDesc" class="text-slate-600 text-sm sm:text-base max-w-lg mx-auto">Quiz description goes here...</p>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 max-w-md mx-auto pt-4 border-t border-slate-100 text-center">
+                    <div class="p-3 bg-slate-50 rounded-xl">
+                        <span id="previewTotalQ" class="block text-xl font-bold text-slate-800">0</span>
+                        <span class="text-xs text-slate-500 font-medium">Questions</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl">
+                        <span id="previewTotalPoints" class="block text-xl font-bold text-slate-800">0</span>
+                        <span class="text-xs text-slate-500 font-medium">Total Points</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl">
+                        <span id="previewPassScore" class="block text-xl font-bold text-slate-800">70%</span>
+                        <span class="text-xs text-slate-500 font-medium">Passing Grade</span>
+                    </div>
+                </div>
+
+                <button onclick="startQuizRunner()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center space-x-2 mx-auto">
+                    <span>Begin Quiz</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Active Quiz Taker Box -->
+            <div id="quizActiveCard" class="hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
+                <!-- Top Header Bar: Progress & Timer -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div class="space-y-1">
+                        <span id="questionCounter" class="text-xs font-extrabold text-brand-600 tracking-wider uppercase">Question 1 of 5</span>
+                        <div class="w-36 sm:w-48 bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div id="quizProgressBar" class="bg-brand-600 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <!-- Timer Pill -->
+                    <div id="timerContainer" class="flex items-center space-x-1.5 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-xl font-mono text-xs sm:text-sm font-bold">
+                        <i data-lucide="clock" class="w-4 h-4 animate-pulse"></i>
+                        <span id="timerDisplay">--:--</span>
+                    </div>
+                </div>
+
+                <!-- Question Prompt -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span id="questionTypeBadge" class="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">Multiple Choice</span>
+                        <span id="questionPointsBadge" class="text-xs font-semibold text-slate-400">10 Points</span>
+                    </div>
+                    <h3 id="questionTextDisplay" class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">Question Text Here</h3>
+                </div>
+
+                <!-- Dynamic Answer Options Input Area -->
+                <div id="answerOptionsContainer" class="space-y-3">
+                    <!-- Interactive choices rendered dynamically -->
+                </div>
+
+                <!-- Hint / Explanation Callout -->
+                <div id="explanationBox" class="hidden p-4 rounded-xl text-sm animate-fade-in border">
+                    <!-- Hint or explanation content -->
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <button id="btnHint" onclick="toggleHint()" class="text-slate-500 hover:text-slate-800 text-xs sm:text-sm font-semibold flex items-center space-x-1 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500"></i>
+                        <span>Show Hint</span>
+                    </button>
+
+                    <button id="btnSubmitAnswer" onclick="submitAnswer()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-md shadow-brand-500/20 transition-all flex items-center space-x-2">
+                        <span>Submit Answer</span>
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                    </button>
+                    
+                    <button id="btnNextQuestion" onclick="nextQuestion()" class="hidden bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-md transition-all flex items-center space-x-2">
+                        <span>Next Question</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Results Screen -->
+            <div id="quizResultsCard" class="hidden bg-white rounded-3xl p-8 border border-slate-200 shadow-xl space-y-8 animate-slide-up">
+                <div class="text-center space-y-3">
+                    <div id="resultStatusIcon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                        <i data-lucide="award" class="w-10 h-10"></i>
+                    </div>
+                    <h2 id="resultHeading" class="text-2xl sm:text-3xl font-extrabold text-slate-900">Quiz Completed!</h2>
+                    <p id="resultSubtext" class="text-slate-600 text-sm max-w-sm mx-auto">Great effort! Here is your performance breakdown.</p>
+                </div>
+
+                <!-- Score Grid Stat Cards -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Score</span>
+                        <span id="resScoreText" class="text-2xl font-black text-slate-900 mt-1 block">0/0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Percentage</span>
+                        <span id="resPercentageText" class="text-2xl font-black text-brand-600 mt-1 block">0%</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Time Taken</span>
+                        <span id="resTimeText" class="text-2xl font-black text-slate-900 mt-1 block">00:00</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                        <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</span>
+                        <span id="resPassBadge" class="inline-block text-xs font-bold px-2.5 py-1 rounded-full mt-2">--</span>
+                    </div>
+                </div>
+
+                <!-- Detailed Answers Review Section -->
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-900 text-lg flex items-center space-x-2">
+                        <i data-lucide="list-checks" class="w-5 h-5 text-brand-600"></i>
+                        <span>Question Breakdown & Review</span>
+                    </h3>
+                    <div id="resultsReviewContainer" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                        <!-- Rendered Review Items -->
+                    </div>
+                </div>
+
+                <!-- Restart Action -->
+                <div class="flex justify-center pt-2">
+                    <button onclick="resetAndRestartQuiz()" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-3 rounded-xl text-sm shadow-lg shadow-brand-500/20 transition-all flex items-center space-x-2">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>Retake Quiz</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Embed Code & Export Modal Overlay -->
+    <div id="embedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden animate-fade-in">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+                        <i data-lucide="code" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Embed & Export Quiz</h3>
+                </div>
+                <button onclick="closeEmbedModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Tabs: iFrame vs Raw Data -->
+            <div class="space-y-4">
+                <div class="flex space-x-2 border-b border-slate-100">
+                    <button id="tabIframeBtn" onclick="switchEmbedTab('iframe')" class="pb-2 text-sm font-bold border-b-2 border-brand-600 text-brand-600">iFrame Code</button>
+                    <button id="tabJsonBtn" onclick="switchEmbedTab('json')" class="pb-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">JSON Data (Export / Import)</button>
+                </div>
+
+                <!-- iFrame Generator Pane -->
+                <div id="paneIframe" class="space-y-4">
+                    <p class="text-xs sm:text-sm text-slate-600">Copy and paste this HTML responsive iframe snippet into your website, blog, or CMS (WordPress, Notion, Webflow, etc.).</p>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-500 mb-1">Height (px)</label>
+                            <input type="number" id="iframeHeightInput" value="650" oninput="updateEmbedCodeSnippet()" class="w-full border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-500 mb-1">Theme Style</label>
+                            <select id="iframeThemeInput" onchange="updateEmbedCodeSnippet()" class="w-full border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white">
+                                <option value="light">Default Light</option>
+                                <option value="clean">Bordered Clean</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <textarea id="iframeCodeArea" readonly rows="4" class="w-full font-mono text-xs bg-slate-900 text-emerald-400 p-3.5 rounded-xl border border-slate-800 focus:outline-none resize-none"></textarea>
+                        <button onclick="copyEmbedCode('iframeCodeArea')" class="absolute top-2.5 right-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center space-x-1 transition-colors">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span id="copyIframeText">Copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- JSON Data Pane -->
+                <div id="paneJson" class="hidden space-y-4">
+                    <p class="text-xs sm:text-sm text-slate-600">Export your quiz structured configuration to save as backup, or paste valid quiz JSON to import instantly.</p>
+                    
+                    <textarea id="jsonCodeArea" rows="6" class="w-full font-mono text-xs bg-slate-900 text-slate-200 p-3.5 rounded-xl border border-slate-800 focus:outline-none resize-none"></textarea>
+
+                    <div class="flex items-center justify-between gap-3">
+                        <button onclick="copyEmbedCode('jsonCodeArea')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl border border-slate-200 flex items-center space-x-1.5">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            <span>Copy JSON</span>
+                        </button>
+                        <button onclick="importQuizFromJSON()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs flex items-center space-x-1.5">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Import JSON</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Close Modal Footer -->
+            <div class="pt-2 text-right border-t border-slate-100">
+                <button onclick="closeEmbedModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs sm:text-sm transition-colors">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Box -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toastMessage" class="text-xs sm:text-sm font-medium">Action successful</span>
+    </div>
+
+    <script>
+        // Default Sample Quizzes Data
+        const PRESET_QUIZZES = {
+            general: {
+                title: "🌍 General Knowledge Trivia",
+                description: "Put your general trivia skills to the test with this interactive quiz challenge!",
+                passScore: 70,
+                questions: [
+                    {
+                        id: "q1",
+                        type: "mcq",
+                        question: "Which planet in our solar system is known as the 'Red Planet'?",
+                        points: 10,
+                        timer: 20,
+                        hint: "It is named after the Roman god of war.",
+                        explanation: "Mars is called the Red Planet because the iron oxide prevalent on its surface gives it a reddish appearance.",
+                        options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                        correct: [1]
+                    },
+                    {
+                        id: "q2",
+                        type: "checkbox",
+                        question: "Which of the following are oceans on Earth? (Select all that apply)",
+                        points: 15,
+                        timer: 25,
+                        hint: "There are 5 recognized global oceans.",
+                        explanation: "Atlantic, Indian, and Pacific are major Earth oceans. The Mediterranean is a sea.",
+                        options: ["Atlantic Ocean", "Mediterranean Sea", "Indian Ocean", "Pacific Ocean"],
+                        correct: [0, 2, 3]
+                    },
+                    {
+                        id: "q3",
+                        type: "tf",
+                        question: "The Great Wall of China is easily visible from low Earth orbit with the naked eye without aid.",
+                        points: 10,
+                        timer: 15,
+                        hint: "This is a very popular space myth.",
+                        explanation: "False! Astronauts have repeatedly confirmed that the Great Wall is not generally visible to the naked eye from orbit without aid.",
+                        options: ["True", "False"],
+                        correct: [1]
+                    },
+                    {
+                        id: "q4",
+                        type: "text",
+                        question: "What is the chemical symbol for Gold on the periodic table?",
+                        points: 15,
+                        timer: 20,
+                        hint: "It originates from the Latin word 'Aurum'.",
+                        explanation: "Au comes from Aurum, the Latin word for Gold.",
+                        acceptedAnswers: ["Au", "au", "AU"]
+                    }
+                ]
+            },
+            tech: {
+                title: "💻 Web Development & Tech Quiz",
+                description: "Test your mastery over frontend web development, JavaScript, and standard browser technologies.",
+                passScore: 75,
+                questions: [
+                    {
+                        id: "q1",
+                        type: "mcq",
+                        question: "Which CSS property is used to change the background color of an element?",
+                        points: 10,
+                        timer: 15,
+                        hint: "It contains the word 'background'.",
+                        explanation: "The 'background-color' property sets the background color of an element.",
+                        options: ["color", "bg-color", "background-color", "canvas-color"],
+                        correct: [2]
+                    },
+                    {
+                        id: "q2",
+                        type: "checkbox",
+                        question: "Which of the following are valid HTML5 semantic tags?",
+                        points: 15,
+                        timer: 20,
+                        hint: "Think about layout structural elements introduced in HTML5.",
+                        explanation: "<header>, <article>, and <nav> are official HTML5 structural elements.",
+                        options: ["<header>", "<container>", "<article>", "<nav>"],
+                        correct: [0, 2, 3]
+                    },
+                    {
+                        id: "q3",
+                        type: "tf",
+                        question: "JavaScript is a strictly type-checked language compiled prior to runtime execution.",
+                        points: 10,
+                        timer: 15,
+                        hint: "JavaScript is dynamically typed.",
+                        explanation: "False! JavaScript is a dynamically-typed, interpreted/JIT-compiled scripting language.",
+                        options: ["True", "False"],
+                        correct: [1]
+                    }
+                ]
+            }
+        };
+
+        // Active State Variable
+        let quizData = JSON.parse(JSON.stringify(PRESET_QUIZZES.general));
+        let activeMode = 'builder'; // 'builder' | 'taker'
+        
+        // Taker Execution State
+        let currentQIndex = 0;
+        let userAnswers = {}; // { qIndex: answerValue }
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let totalTimeSpent = 0;
+        let quizStartTime = null;
+
+        // Initialize App on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            renderBuilderQuestions();
+            updateEmbedCodeSnippet();
+            lucide.createIcons();
+            
+            // Check if URL parameters request Embed Mode directly
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('embed') === 'true') {
+                document.getElementById('mainHeader').classList.add('hidden');
+                switchMode('taker');
+            }
+        });
+
+        // Switch between Builder and Interactive Taker view
+        function switchMode(mode) {
+            activeMode = mode;
+            const btnBuild = document.getElementById('btnModeBuild');
+            const btnTake = document.getElementById('btnModeTake');
+            const viewBuild = document.getElementById('builderModeView');
+            const viewTake = document.getElementById('takerModeView');
+
+            if (mode === 'builder') {
+                btnBuild.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-white text-slate-900 shadow-xs";
+                btnTake.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
+                viewBuild.classList.remove('hidden');
+                viewTake.classList.add('hidden');
+                clearInterval(timerInterval);
+            } else {
+                syncBuilderInputsToData();
+                btnTake.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-white text-slate-900 shadow-xs";
+                btnBuild.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-slate-600 hover:text-slate-900";
+                viewBuild.classList.add('hidden');
+                viewTake.classList.remove('hidden');
+                prepareTakerStartScreen();
+            }
+        }
+
+        // Sync Builder Header Inputs into quizData
+        function syncBuilderInputsToData() {
+            quizData.title = document.getElementById('quizTitleInput').value.trim() || "Untitled Quiz";
+            quizData.description = document.getElementById('quizDescInput').value.trim() || "";
+            quizData.passScore = parseInt(document.getElementById('quizPassScoreInput').value, 10) || 70;
+        }
+
+        // Render Question Card Forms in Builder Mode
+        function renderBuilderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            quizData.questions.forEach((q, idx) => {
+                const qCard = document.createElement('div');
+                qCard.className = 'bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 animate-fade-in relative';
+                
+                let typeBadgeColor = "bg-brand-50 text-brand-700 border-brand-200";
+                let typeName = "Multiple Choice";
+                if (q.type === 'checkbox') { typeBadgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200"; typeName = "Multiple Select"; }
+                else if (q.type === 'tf') { typeBadgeColor = "bg-emerald-50 text-emerald-700 border-emerald-200"; typeName = "True / False"; }
+                else if (q.type === 'text') { typeBadgeColor = "bg-amber-50 text-amber-700 border-amber-200"; typeName = "Short Answer"; }
+
+                qCard.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold text-xs flex items-center justify-center">${idx + 1}</span>
+                            <span class="text-xs font-semibold border px-2.5 py-0.5 rounded-full ${typeBadgeColor}">${typeName}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="moveQuestion(${idx}, -1)" ${idx === 0 ? 'disabled class="opacity-30 cursor-not-allowed text-slate-400 p-1"' : 'class="text-slate-400 hover:text-slate-700 p-1"'}>
+                                <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="moveQuestion(${idx}, 1)" ${idx === quizData.questions.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed text-slate-400 p-1"' : 'class="text-slate-400 hover:text-slate-700 p-1"'}>
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteQuestion(${idx})" class="text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Question Prompt & Options -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Question Prompt</label>
+                            <input type="text" value="${escapeHtml(q.question)}" onchange="updateQuestionField(${idx}, 'question', this.value)" placeholder="Type question statement..." class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+
+                        <!-- Config Options Block -->
+                        <div class="pt-2">
+                            ${renderOptionBuilderInputs(q, idx)}
+                        </div>
+
+                        <!-- Hints and Metadata Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Points</label>
+                                <input type="number" min="1" value="${q.points || 10}" onchange="updateQuestionField(${idx}, 'points', parseInt(this.value, 10))" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Timer (sec, 0 = none)</label>
+                                <input type="number" min="0" value="${q.timer || 0}" onchange="updateQuestionField(${idx}, 'timer', parseInt(this.value, 10))" class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Optional Hint</label>
+                                <input type="text" value="${escapeHtml(q.hint || '')}" onchange="updateQuestionField(${idx}, 'hint', this.value)" placeholder="Short hint..." class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Explanation (Revealed after answer)</label>
+                            <input type="text" value="${escapeHtml(q.explanation || '')}" onchange="updateQuestionField(${idx}, 'explanation', this.value)" placeholder="Explain why the answer is correct..." class="w-full border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(qCard);
+            });
+
+            lucide.createIcons();
+            updateEmbedCodeSnippet();
+        }
+
+        // Render Options area based on specific question types
+        function renderOptionBuilderInputs(q, qIdx) {
+            if (q.type === 'text') {
+                const acceptedStr = (q.acceptedAnswers || []).join(', ');
+                return `
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Accepted Text Answers (comma separated)</label>
+                    <input type="text" value="${escapeHtml(acceptedStr)}" onchange="updateAcceptedTextAnswers(${qIdx}, this.value)" placeholder="e.g. Au, gold, GOLD" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                `;
+            }
+
+            let html = `<label class="block text-xs font-semibold text-slate-500 mb-1">Answer Choices (Check correct option)</label><div class="space-y-2">`;
+            
+            q.options.forEach((opt, optIdx) => {
+                const isChecked = (q.correct || []).includes(optIdx);
+                const inputType = q.type === 'checkbox' ? 'checkbox' : 'radio';
+                
+                html += `
+                    <div class="flex items-center space-x-2">
+                        <input type="${inputType}" name="q_corr_${qIdx}" ${isChecked ? 'checked' : ''} onchange="toggleOptionCorrect(${qIdx}, ${optIdx}, this.checked)" class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500 cursor-pointer">
+                        <input type="text" value="${escapeHtml(opt)}" onchange="updateOptionText(${qIdx}, ${optIdx}, this.value)" class="flex-grow border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-700 focus:ring-2 focus:ring-brand-500 focus:outline-none" ${q.type === 'tf' ? 'readonly' : ''}>
+                        ${q.type !== 'tf' && q.options.length > 2 ? `
+                            <button onclick="removeOption(${qIdx}, ${optIdx})" class="text-slate-400 hover:text-rose-500 p-1">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            if (q.type !== 'tf') {
+                html += `
+                    <button onclick="addOption(${qIdx})" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center space-x-1 pt-1">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Add Option Choice</span>
+                    </button>
+                `;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // Question Operations Helpers
+        function addQuestion(type) {
+            syncBuilderInputsToData();
+            const newQ = {
+                id: 'q_' + Date.now(),
+                type: type,
+                question: type === 'tf' ? 'Is this statement true or false?' : 'New Question Prompt',
+                points: 10,
+                timer: 0,
+                hint: '',
+                explanation: '',
+                options: type === 'tf' ? ['True', 'False'] : ['Option 1', 'Option 2', 'Option 3'],
+                correct: [0]
+            };
+            if (type === 'text') {
+                delete newQ.options;
+                delete newQ.correct;
+                newQ.acceptedAnswers = ['answer'];
+            }
+            quizData.questions.push(newQ);
+            renderBuilderQuestions();
+            showToast("Question added");
+        }
+
+        function deleteQuestion(idx) {
+            if (quizData.questions.length <= 1) {
+                showToast("Quiz must have at least one question!");
+                return;
+            }
+            quizData.questions.splice(idx, 1);
+            renderBuilderQuestions();
+        }
+
+        function moveQuestion(idx, direction) {
+            const targetIdx = idx + direction;
+            if (targetIdx < 0 || targetIdx >= quizData.questions.length) return;
+            const temp = quizData.questions[idx];
+            quizData.questions[idx] = quizData.questions[targetIdx];
+            quizData.questions[targetIdx] = temp;
+            renderBuilderQuestions();
+        }
+
+        function updateQuestionField(qIdx, field, val) {
+            quizData.questions[qIdx][field] = val;
+            updateEmbedCodeSnippet();
+        }
+
+        function updateOptionText(qIdx, optIdx, val) {
+            quizData.questions[qIdx].options[optIdx] = val;
+            updateEmbedCodeSnippet();
+        }
+
+        function toggleOptionCorrect(qIdx, optIdx, isChecked) {
+            const q = quizData.questions[qIdx];
+            if (q.type === 'mcq' || q.type === 'tf') {
+                q.correct = [optIdx];
+            } else if (q.type === 'checkbox') {
+                q.correct = q.correct || [];
+                if (isChecked && !q.correct.includes(optIdx)) {
+                    q.correct.push(optIdx);
+                } else if (!isChecked) {
+                    q.correct = q.correct.filter(i => i !== optIdx);
+                }
+            }
+            renderBuilderQuestions();
+        }
+
+        function addOption(qIdx) {
+            const q = quizData.questions[qIdx];
+            q.options.push(`Option ${q.options.length + 1}`);
+            renderBuilderQuestions();
+        }
+
+        function removeOption(qIdx, optIdx) {
+            const q = quizData.questions[qIdx];
+            q.options.splice(optIdx, 1);
+            q.correct = q.correct.filter(c => c !== optIdx).map(c => c > optIdx ? c - 1 : c);
+            renderBuilderQuestions();
+        }
+
+        function updateAcceptedTextAnswers(qIdx, rawStr) {
+            const list = rawStr.split(',').map(s => s.trim()).filter(Boolean);
+            quizData.questions[qIdx].acceptedAnswers = list;
+            updateEmbedCodeSnippet();
+        }
+
+        function loadPresetQuiz(key) {
+            if (PRESET_QUIZZES[key]) {
+                quizData = JSON.parse(JSON.stringify(PRESET_QUIZZES[key]));
+                document.getElementById('quizTitleInput').value = quizData.title;
+                document.getElementById('quizDescInput').value = quizData.description;
+                document.getElementById('quizPassScoreInput').value = quizData.passScore;
+                renderBuilderQuestions();
+                showToast(`Loaded ${PRESET_QUIZZES[key].title}`);
+            }
+        }
+
+        // Prepare Quiz Taker Start Screen
+        function prepareTakerStartScreen() {
+            document.getElementById('quizStartCard').classList.remove('hidden');
+            document.getElementById('quizActiveCard').classList.add('hidden');
+            document.getElementById('quizResultsCard').classList.add('hidden');
+
+            document.getElementById('previewQuizTitle').innerText = quizData.title || "Untitled Quiz";
+            document.getElementById('previewQuizDesc').innerText = quizData.description || "";
+            document.getElementById('previewTotalQ').innerText = quizData.questions.length;
+            
+            const totalPts = quizData.questions.reduce((acc, cur) => acc + (parseInt(cur.points, 10) || 0), 0);
+            document.getElementById('previewTotalPoints').innerText = totalPts;
+            document.getElementById('previewPassScore').innerText = `${quizData.passScore || 70}%`;
+        }
+
+        // Start Quiz Engine
+        function startQuizRunner() {
+            currentQIndex = 0;
+            userAnswers = {};
+            totalTimeSpent = 0;
+            quizStartTime = Date.now();
+
+            document.getElementById('quizStartCard').classList.add('hidden');
+            document.getElementById('quizActiveCard').classList.remove('hidden');
+
+            renderCurrentQuestion();
+        }
+
+        // Render Current Question in Interactive Taker View
+        function renderCurrentQuestion() {
+            clearInterval(timerInterval);
+            const q = quizData.questions[currentQIndex];
+            const totalQ = quizData.questions.length;
+
+            // Update Progress Header
+            document.getElementById('questionCounter').innerText = `Question ${currentQIndex + 1} of ${totalQ}`;
+            const pct = ((currentQIndex + 1) / totalQ) * 100;
+            document.getElementById('quizProgressBar').style.width = `${pct}%`;
+
+            // Question Metadata
+            document.getElementById('questionTextDisplay').innerText = q.question;
+            document.getElementById('questionPointsBadge').innerText = `${q.points || 10} Pts`;
+
+            let typeLabel = "Multiple Choice";
+            if (q.type === 'checkbox') typeLabel = "Multiple Select";
+            if (q.type === 'tf') typeLabel = "True / False";
+            if (q.type === 'text') typeLabel = "Short Answer";
+            document.getElementById('questionTypeBadge').innerText = typeLabel;
+
+            // Hide explanation/hint box
+            const expBox = document.getElementById('explanationBox');
+            expBox.classList.add('hidden');
+            expBox.innerHTML = '';
+
+            // Toggle action buttons
+            document.getElementById('btnSubmitAnswer').classList.remove('hidden');
+            document.getElementById('btnNextQuestion').classList.add('hidden');
+
+            // Render Answer Controls
+            const answersBox = document.getElementById('answerOptionsContainer');
+            answersBox.innerHTML = '';
+
+            if (q.type === 'text') {
+                answersBox.innerHTML = `
+                    <input type="text" id="shortAnswerInput" placeholder="Type your answer here..." class="w-full border-2 border-slate-200 rounded-2xl p-4 text-base font-semibold focus:border-brand-600 focus:outline-none transition-colors">
+                `;
+            } else {
+                q.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.onclick = () => selectOptionChoice(idx, q.type);
+                    btn.className = `option-choice-btn w-full p-4 rounded-2xl border-2 border-slate-200 hover:border-brand-300 bg-white text-left text-slate-800 font-medium text-sm sm:text-base flex items-center justify-between transition-all group`;
+                    btn.setAttribute('data-idx', idx);
+
+                    btn.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="opt-indicator w-6 h-6 rounded-lg border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500 group-hover:border-brand-500">${String.fromCharCode(65 + idx)}</span>
+                            <span>${escapeHtml(opt)}</span>
+                        </div>
+                        <i data-lucide="circle" class="opt-check-icon w-5 h-5 text-slate-300"></i>
+                    `;
+                    answersBox.appendChild(btn);
+                });
+                lucide.createIcons();
+            }
+
+            // Setup Timer
+            const timerContainer = document.getElementById('timerContainer');
+            if (q.timer && q.timer > 0) {
+                timerContainer.classList.remove('hidden');
+                timeRemaining = q.timer;
+                updateTimerDisplay();
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        submitAnswer(true); // Auto-submit on timeout
+                    }
+                }, 1000);
+            } else {
+                timerContainer.classList.add('hidden');
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timeRemaining / 60);
+            const secs = timeRemaining % 60;
+            document.getElementById('timerDisplay').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Select Options Interaction
+        function selectOptionChoice(idx, type) {
+            const btns = document.querySelectorAll('.option-choice-btn');
+
+            if (type === 'mcq' || type === 'tf') {
+                btns.forEach(b => {
+                    b.classList.remove('border-brand-600', 'bg-brand-50/50', 'ring-2', 'ring-brand-500/20');
+                    b.querySelector('.opt-indicator').className = 'opt-indicator w-6 h-6 rounded-lg border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500';
+                });
+
+                const target = document.querySelector(`.option-choice-btn[data-idx="${idx}"]`);
+                target.classList.add('border-brand-600', 'bg-brand-50/50', 'ring-2', 'ring-brand-500/20');
+                target.querySelector('.opt-indicator').className = 'opt-indicator w-6 h-6 rounded-lg bg-brand-600 text-white flex items-center justify-center text-xs font-bold';
+                
+                userAnswers[currentQIndex] = [idx];
+            } else if (type === 'checkbox') {
+                const target = document.querySelector(`.option-choice-btn[data-idx="${idx}"]`);
+                let currentSel = userAnswers[currentQIndex] || [];
+                
+                if (currentSel.includes(idx)) {
+                    currentSel = currentSel.filter(i => i !== idx);
+                    target.classList.remove('border-brand-600', 'bg-brand-50/50', 'ring-2', 'ring-brand-500/20');
+                    target.querySelector('.opt-indicator').className = 'opt-indicator w-6 h-6 rounded-lg border border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500';
+                } else {
+                    currentSel.push(idx);
+                    target.classList.add('border-brand-600', 'bg-brand-50/50', 'ring-2', 'ring-brand-500/20');
+                    target.querySelector('.opt-indicator').className = 'opt-indicator w-6 h-6 rounded-lg bg-brand-600 text-white flex items-center justify-center text-xs font-bold';
+                }
+                userAnswers[currentQIndex] = currentSel;
+            }
+        }
+
+        function toggleHint() {
+            const q = quizData.questions[currentQIndex];
+            const expBox = document.getElementById('explanationBox');
+            if (!q.hint) {
+                showToast("No hint available for this question.");
+                return;
+            }
+            expBox.className = "p-4 rounded-xl text-sm animate-fade-in border bg-amber-50 border-amber-200 text-amber-900";
+            expBox.innerHTML = `<strong>💡 Hint:</strong> ${escapeHtml(q.hint)}`;
+            expBox.classList.remove('hidden');
+        }
+
+        // Submit Answer Logic with Immediate Feedback
+        function submitAnswer(timedOut = false) {
+            clearInterval(timerInterval);
+            const q = quizData.questions[currentQIndex];
+
+            // Record text response if type text
+            if (q.type === 'text') {
+                const txtInput = document.getElementById('shortAnswerInput');
+                userAnswers[currentQIndex] = txtInput ? txtInput.value.trim() : '';
+            }
+
+            const rawUserAns = userAnswers[currentQIndex];
+            const isCorrect = checkAnswerCorrectness(q, rawUserAns);
+
+            // Visual feedback on choice cards
+            if (q.type !== 'text') {
+                const btns = document.querySelectorAll('.option-choice-btn');
+                btns.forEach(btn => {
+                    const idx = parseInt(btn.getAttribute('data-idx'), 10);
+                    btn.disabled = true;
+
+                    const isTargetCorrect = (q.correct || []).includes(idx);
+                    const isUserSelected = Array.isArray(rawUserAns) && rawUserAns.includes(idx);
+
+                    if (isTargetCorrect) {
+                        btn.className = "option-choice-btn w-full p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-medium text-sm sm:text-base flex items-center justify-between";
+                    } else if (isUserSelected && !isTargetCorrect) {
+                        btn.className = "option-choice-btn w-full p-4 rounded-2xl border-2 border-rose-500 bg-rose-50 text-rose-900 font-medium text-sm sm:text-base flex items-center justify-between";
+                    }
+                });
+            } else {
+                const txtInput = document.getElementById('shortAnswerInput');
+                if (txtInput) {
+                    txtInput.disabled = true;
+                    txtInput.className = isCorrect 
+                        ? "w-full border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-bold rounded-2xl p-4"
+                        : "w-full border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold rounded-2xl p-4";
+                }
+            }
+
+            // Show explanation box
+            const expBox = document.getElementById('explanationBox');
+            expBox.classList.remove('hidden');
+            if (isCorrect) {
+                expBox.className = "p-4 rounded-2xl text-sm animate-fade-in border bg-emerald-50 border-emerald-200 text-emerald-900 space-y-1";
+                expBox.innerHTML = `<div class="font-bold flex items-center space-x-1.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i><span>Correct! (+${q.points || 10} Pts)</span></div><p class="text-xs text-emerald-800">${escapeHtml(q.explanation || '')}</p>`;
+            } else {
+                expBox.className = "p-4 rounded-2xl text-sm animate-fade-in border bg-rose-50 border-rose-200 text-rose-900 space-y-1";
+                expBox.innerHTML = `<div class="font-bold flex items-center space-x-1.5"><i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i><span>${timedOut ? 'Time Expired!' : 'Incorrect'}</span></div><p class="text-xs text-rose-800">${escapeHtml(q.explanation || '')}</p>`;
+            }
+            lucide.createIcons();
+
+            document.getElementById('btnSubmitAnswer').classList.add('hidden');
+            document.getElementById('btnNextQuestion').classList.remove('hidden');
+        }
+
+        function checkAnswerCorrectness(q, userAns) {
+            if (userAns === undefined || userAns === null) return false;
+
+            if (q.type === 'text') {
+                const accepted = (q.acceptedAnswers || []).map(a => a.toLowerCase().trim());
+                return accepted.includes(String(userAns).toLowerCase().trim());
+            }
+
+            if (q.type === 'mcq' || q.type === 'tf') {
+                return Array.isArray(userAns) && userAns.length === 1 && userAns[0] === q.correct[0];
+            }
+
+            if (q.type === 'checkbox') {
+                if (!Array.isArray(userAns)) return false;
+                const sortedUser = [...userAns].sort();
+                const sortedCorrect = [...(q.correct || [])].sort();
+                return JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
+            }
+
+            return false;
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            if (currentQIndex < quizData.questions.length) {
+                renderCurrentQuestion();
+            } else {
+                renderQuizResults();
+            }
+        }
+
+        // Render Final Score Card and Answers Breakdown
+        function renderQuizResults() {
+            document.getElementById('quizActiveCard').classList.add('hidden');
+            document.getElementById('quizResultsCard').classList.remove('hidden');
+
+            const totalDurationSecs = Math.floor((Date.now() - quizStartTime) / 1000);
+            let earnedPoints = 0;
+            let totalPossiblePoints = 0;
+
+            const reviewContainer = document.getElementById('resultsReviewContainer');
+            reviewContainer.innerHTML = '';
+
+            quizData.questions.forEach((q, idx) => {
+                const qPts = parseInt(q.points, 10) || 10;
+                totalPossiblePoints += qPts;
+
+                const uAns = userAnswers[idx];
+                const isCorrect = checkAnswerCorrectness(q, uAns);
+                if (isCorrect) earnedPoints += qPts;
+
+                // Build Review Item Box
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-2xl border text-xs sm:text-sm space-y-1.5 ${isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200'}`;
+                
+                let uAnsDisplay = "No answer provided";
+                if (q.type === 'text') {
+                    uAnsDisplay = uAns ? `"${escapeHtml(uAns)}"` : 'Blank';
+                } else if (Array.isArray(uAns) && uAns.length > 0) {
+                    uAnsDisplay = uAns.map(i => escapeHtml(q.options[i])).join(', ');
+                }
+
+                item.innerHTML = `
+                    <div class="flex items-center justify-between font-bold">
+                        <span class="text-slate-800">${idx + 1}. ${escapeHtml(q.question)}</span>
+                        <span class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${isCorrect ? `+${qPts} Pts` : '0 Pts'}</span>
+                    </div>
+                    <div class="text-slate-600"><strong>Your Answer:</strong> ${uAnsDisplay}</div>
+                    <div class="text-slate-500 text-xs"><strong>Explanation:</strong> ${escapeHtml(q.explanation || 'N/A')}</div>
+                `;
+                reviewContainer.appendChild(item);
+            });
+
+            const pctScore = totalPossiblePoints > 0 ? Math.round((earnedPoints / totalPossiblePoints) * 100) : 0;
+            const passed = pctScore >= (quizData.passScore || 70);
+
+            document.getElementById('resScoreText').innerText = `${earnedPoints}/${totalPossiblePoints}`;
+            document.getElementById('resPercentageText').innerText = `${pctScore}%`;
+            
+            const mins = Math.floor(totalDurationSecs / 60);
+            const secs = totalDurationSecs % 60;
+            document.getElementById('resTimeText').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            const passBadge = document.getElementById('resPassBadge');
+            const statusIcon = document.getElementById('resultStatusIcon');
+
+            if (passed) {
+                passBadge.className = "inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+                passBadge.innerText = "PASSED";
+                statusIcon.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto bg-emerald-100 text-emerald-600 shadow-emerald-500/20";
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                passBadge.className = "inline-block text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800";
+                passBadge.innerText = "NEEDS IMPROVEMENT";
+                statusIcon.className = "w-20 h-20 rounded-full flex items-center justify-center mx-auto bg-rose-100 text-rose-600 shadow-rose-500/20";
+            }
+        }
+
+        function resetAndRestartQuiz() {
+            prepareTakerStartScreen();
+        }
+
+        // Modal & Embed Snippet Generator Functions
+        function openEmbedModal() {
+            syncBuilderInputsToData();
+            document.getElementById('embedModal').classList.remove('hidden');
+            updateEmbedCodeSnippet();
+            document.getElementById('jsonCodeArea').value = JSON.stringify(quizData, null, 2);
+        }
+
+        function closeEmbedModal() {
+            document.getElementById('embedModal').classList.add('hidden');
+        }
+
+        function switchEmbedTab(tab) {
+            const iframeBtn = document.getElementById('tabIframeBtn');
+            const jsonBtn = document.getElementById('tabJsonBtn');
+            const paneIframe = document.getElementById('paneIframe');
+            const paneJson = document.getElementById('paneJson');
+
+            if (tab === 'iframe') {
+                iframeBtn.className = "pb-2 text-sm font-bold border-b-2 border-brand-600 text-brand-600";
+                jsonBtn.className = "pb-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+                paneIframe.classList.remove('hidden');
+                paneJson.classList.add('hidden');
+            } else {
+                jsonBtn.className = "pb-2 text-sm font-bold border-b-2 border-brand-600 text-brand-600";
+                iframeBtn.className = "pb-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+                paneJson.classList.remove('hidden');
+                paneIframe.classList.add('hidden');
+            }
+        }
+
+        function updateEmbedCodeSnippet() {
+            const height = document.getElementById('iframeHeightInput')?.value || 650;
+            const currentUrl = window.location.href.split('?')[0];
+            const code = `<iframe src="${currentUrl}?embed=true" width="100%" height="${height}" frameborder="0" style="border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;" allowfullscreen></iframe>`;
+            
+            const area = document.getElementById('iframeCodeArea');
+            if (area) area.value = code;
+        }
+
+        function copyEmbedCode(areaId) {
+            const copyText = document.getElementById(areaId);
+            copyText.select();
+            document.execCommand('copy');
+            showToast("Copied to clipboard!");
+        }
+
+        function importQuizFromJSON() {
+            try {
+                const raw = document.getElementById('jsonCodeArea').value;
+                const parsed = JSON.parse(raw);
+                if (!parsed.questions || !Array.isArray(parsed.questions)) {
+                    throw new Error("Invalid format");
+                }
+                quizData = parsed;
+                document.getElementById('quizTitleInput').value = quizData.title || "";
+                document.getElementById('quizDescInput').value = quizData.description || "";
+                document.getElementById('quizPassScoreInput').value = quizData.passScore || 70;
+                renderBuilderQuestions();
+                closeEmbedModal();
+                showToast("Quiz imported successfully!");
+            } catch (err) {
+                showToast("Invalid JSON structure.");
+            }
+        }
+
+        // Utility: Toast Notification Popup
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Utility: HTML Escaper
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
