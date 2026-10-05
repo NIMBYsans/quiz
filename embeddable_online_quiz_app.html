@@ -124,6 +124,29 @@
 
     <!-- VIEW: BUILDER -->
     <section id="view-builder" class="hidden space-y-8">
+      <!-- Export / Import Control Bar -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+        <h2 class="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
+          <i data-lucide="download" class="w-5 h-5 custom-text-primary"></i> Export & Save Quiz
+        </h2>
+        <p class="text-xs text-gray-500">Export your custom quiz data so you can save it, back it up, or load it anytime.</p>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button onclick="exportQuizJSON()" class="px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition flex items-center gap-2 custom-btn-primary">
+            <i data-lucide="file-output" class="w-4 h-4"></i> Export JSON File
+          </button>
+          
+          <label class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2 cursor-pointer">
+            <i data-lucide="file-input" class="w-4 h-4"></i> Import JSON File
+            <input type="file" id="import-json-input" accept=".json" onchange="importQuizJSON(event)" class="hidden">
+          </label>
+
+          <button onclick="copyQuizCode()" class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2">
+            <i data-lucide="copy" class="w-4 h-4"></i> Copy Quiz Data (Code)
+          </button>
+        </div>
+      </div>
+
       <!-- General Settings -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
         <h2 class="text-xl font-bold text-gray-900 border-b border-gray-100 pb-4 flex items-center gap-2">
@@ -133,11 +156,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quiz Title</label>
-            <input type="text" id="builder-title" onchange="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Community Knowledge Quiz">
+            <input type="text" id="builder-title" oninput="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Community Knowledge Quiz">
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Subtitle / Description</label>
-            <input type="text" id="builder-subtitle" onchange="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Test how much you know about our mission">
+            <input type="text" id="builder-subtitle" oninput="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Test how much you know about our mission">
           </div>
         </div>
 
@@ -228,13 +251,21 @@
     let score = 0;
     let selectedOption = null;
 
-    // Initialize App
+    // Load saved quiz from localStorage if available
     document.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("custom_quiz_data");
+      if (saved) {
+        try { quizData = JSON.parse(saved); } catch(e){}
+      }
       lucide.createIcons();
       applyColorTheme(quizData.primaryColor, quizData.primaryHover);
       renderTakeQuiz();
       renderBuilder();
     });
+
+    function saveToLocalStorage() {
+      localStorage.setItem("custom_quiz_data", JSON.stringify(quizData));
+    }
 
     // Theme Switcher
     function applyColorTheme(primary, hover) {
@@ -242,6 +273,49 @@
       quizData.primaryHover = hover;
       document.documentElement.style.setProperty('--primary-color', primary);
       document.documentElement.style.setProperty('--primary-hover', hover);
+      saveToLocalStorage();
+    }
+
+    // Export & Import Functions
+    function exportQuizJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quizData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${quizData.title.toLowerCase().replace(/\s+/g, '_')}_quiz.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importQuizJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.title && Array.isArray(imported.questions)) {
+            quizData = imported;
+            applyColorTheme(quizData.primaryColor || "#dc2626", quizData.primaryHover || "#b91c1c");
+            saveToLocalStorage();
+            renderTakeQuiz();
+            renderBuilder();
+            alert("Quiz loaded successfully!");
+          } else {
+            alert("Invalid quiz JSON file structure.");
+          }
+        } catch(err) {
+          alert("Error parsing JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function copyQuizCode() {
+      const code = JSON.stringify(quizData, null, 2);
+      navigator.clipboard.writeText(code).then(() => {
+        alert("Quiz configuration copied to clipboard!");
+      });
     }
 
     // View Navigation
@@ -261,6 +335,7 @@
         takeView.classList.remove("hidden");
         takeBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 custom-btn-primary";
         builderBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2";
+        renderTakeQuiz();
       } else if (view === "builder") {
         builderView.classList.remove("hidden");
         builderBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 custom-btn-primary";
@@ -320,13 +395,12 @@
 
     function selectOption(idx) {
       const q = quizData.questions[currentQuestionIndex];
-      if (selectedOption !== null) return; // Prevent changing after answer
+      if (selectedOption !== null) return;
       selectedOption = idx;
 
       const isCorrect = idx === q.correct;
       if (isCorrect) score++;
 
-      // Highlight selected options
       q.options.forEach((_, i) => {
         const btn = document.getElementById(`opt-btn-${i}`);
         btn.disabled = true;
@@ -339,7 +413,6 @@
         }
       });
 
-      // Show Feedback
       const feedbackBox = document.getElementById("feedback-box");
       const feedbackText = document.getElementById("feedback-text");
       feedbackBox.classList.remove("hidden");
@@ -409,12 +482,12 @@
 
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Question Prompt</label>
-            <input type="text" value="${q.question}" onchange="updateQuestionText(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            <input type="text" value="${q.question}" oninput="updateQuestionText(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Image URL (Optional)</label>
-            <input type="text" value="${q.image || ''}" onchange="updateQuestionImage(${qIndex}, this.value)" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            <input type="text" value="${q.image || ''}" oninput="updateQuestionImage(${qIndex}, this.value)" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
           </div>
 
           <div class="space-y-2">
@@ -422,14 +495,14 @@
             ${q.options.map((opt, oIndex) => `
               <div class="flex items-center gap-2">
                 <input type="radio" name="correct-${qIndex}" ${q.correct === oIndex ? 'checked' : ''} onchange="setCorrectAnswer(${qIndex},${oIndex})" class="w-4 h-4 text-red-600 focus:ring-red-500">
-                <input type="text" value="${opt}" onchange="updateOptionText(${qIndex},${oIndex}, this.value)" class="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                <input type="text" value="${opt}" oninput="updateOptionText(${qIndex},${oIndex}, this.value)" class="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
               </div>
             `).join('')}
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Explanation (Optional)</label>
-            <input type="text" value="${q.explanation || ''}" onchange="updateExplanation(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Shown after user answers">
+            <input type="text" value="${q.explanation || ''}" oninput="updateExplanation(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Shown after user answers">
           </div>
         `;
         container.appendChild(card);
@@ -441,6 +514,7 @@
     function updateQuizMeta() {
       quizData.title = document.getElementById("builder-title").value;
       quizData.subtitle = document.getElementById("builder-subtitle").value;
+      saveToLocalStorage();
     }
 
     function addQuestion() {
@@ -452,6 +526,7 @@
         correct: 0,
         explanation: ""
       });
+      saveToLocalStorage();
       renderBuilder();
     }
 
@@ -461,14 +536,15 @@
         return;
       }
       quizData.questions.splice(index, 1);
+      saveToLocalStorage();
       renderBuilder();
     }
 
-    function updateQuestionText(qIndex, val) { quizData.questions[qIndex].question = val; }
-    function updateQuestionImage(qIndex, val) { quizData.questions[qIndex].image = val; }
-    function setCorrectAnswer(qIndex, oIndex) { quizData.questions[qIndex].correct = oIndex; }
-    function updateOptionText(qIndex, oIndex, val) { quizData.questions[qIndex].options[oIndex] = val; }
-    function updateExplanation(qIndex, val) { quizData.questions[qIndex].explanation = val; }
+    function updateQuestionText(qIndex, val) { quizData.questions[qIndex].question = val; saveToLocalStorage(); }
+    function updateQuestionImage(qIndex, val) { quizData.questions[qIndex].image = val; saveToLocalStorage(); }
+    function setCorrectAnswer(qIndex, oIndex) { quizData.questions[qIndex].correct = oIndex; saveToLocalStorage(); }
+    function updateOptionText(qIndex, oIndex, val) { quizData.questions[qIndex].options[oIndex] = val; saveToLocalStorage(); }
+    function updateExplanation(qIndex, val) { quizData.questions[qIndex].explanation = val; saveToLocalStorage(); }
   </script>
 </body>
 </html>
