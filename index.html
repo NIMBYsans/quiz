@@ -126,6 +126,13 @@
 
     <!-- VIEW: QUIZ RESULTS -->
     <section id="view-results" class="hidden bg-white rounded-2xl p-8 sm:p-12 shadow-sm border border-gray-100 text-center space-y-8">
+      
+      <!-- General / Tier Custom End Screen Image -->
+      <div id="results-image-container" class="hidden w-full max-w-md mx-auto max-h-72 bg-gray-900/5 rounded-2xl border border-gray-200/80 overflow-hidden flex items-center justify-center p-3">
+        <img id="results-image-element" src="" alt="Result summary visual" class="max-h-64 max-w-full object-contain rounded-xl shadow-sm">
+      </div>
+
+      <!-- Default Trophy Icon Badge (Shown if no image provided) -->
       <div id="result-badge-icon" class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto custom-bg-primary-light shadow-sm">
         <i data-lucide="trophy" class="w-10 h-10 custom-text-primary"></i>
       </div>
@@ -275,6 +282,12 @@
             </div>
           </div>
 
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">General End Screen Image URL (Optional)</label>
+            <input type="text" id="builder-end-image" oninput="updateResultsMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="https://lancasterhub.org/wp-content/uploads/10-years.png">
+            <p class="text-xs text-gray-400 mt-1">Displays on the end screen. Tier-specific images below will override this if set.</p>
+          </div>
+
           <div class="flex items-center gap-3 pt-2">
             <input type="checkbox" id="builder-end-confetti" onchange="updateResultsMeta()" class="w-4 h-4 text-red-600 rounded focus:ring-red-500">
             <label for="builder-end-confetti" class="text-sm font-semibold text-gray-700">Enable Confetti Animation on High Scores (≥ 70%)</label>
@@ -306,6 +319,10 @@
               <input type="text" id="tier-0-cta-url" oninput="updateTierData(0)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://lancasterhub.org/donate/">
             </div>
             <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Tier Specific Image URL (Optional)</label>
+              <input type="text" id="tier-0-img" oninput="updateTierData(0)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://example.com/high-score-badge.png">
+            </div>
+            <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Custom Message</label>
               <textarea id="tier-0-msg" oninput="updateTierData(0)" rows="2" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm"></textarea>
             </div>
@@ -330,6 +347,10 @@
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">CTA Button Link / URL</label>
               <input type="text" id="tier-1-cta-url" oninput="updateTierData(1)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://lancasterhub.org/about/">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Tier Specific Image URL (Optional)</label>
+              <input type="text" id="tier-1-img" oninput="updateTierData(1)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://example.com/medium-score-badge.png">
             </div>
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Custom Message</label>
@@ -358,6 +379,10 @@
               <input type="text" id="tier-2-cta-url" oninput="updateTierData(2)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://lancasterhub.org/">
             </div>
             <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Tier Specific Image URL (Optional)</label>
+              <input type="text" id="tier-2-img" oninput="updateTierData(2)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm" placeholder="https://example.com/low-score-badge.png">
+            </div>
+            <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Custom Message</label>
               <textarea id="tier-2-msg" oninput="updateTierData(2)" rows="2" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm"></textarea>
             </div>
@@ -378,6 +403,7 @@
       resultsConfig: {
         headline: "Quiz Completed!",
         subtitle: "Thank you for taking the time to test your knowledge about the Lancaster Hub!",
+        image: "https://lancasterhub.org/wp-content/uploads/10-years.png",
         enableConfetti: true,
         tiers: [
           {
@@ -385,21 +411,24 @@
             title: "Hub Expert! 🎉",
             message: "Amazing job! You really know your Lancaster Hub history and impact.",
             ctaText: "Support Our Mission",
-            ctaUrl: "https://lancasterhub.org/donate/"
+            ctaUrl: "https://lancasterhub.org/donate/",
+            image: ""
           },
           {
             minPercent: 50,
             title: "Great Effort! 👍",
             message: "You know quite a bit about the Lancaster Hub, but there is always more to learn!",
             ctaText: "Learn More About Us",
-            ctaUrl: "https://lancasterhub.org/about/"
+            ctaUrl: "https://lancasterhub.org/about/",
+            image: ""
           },
           {
             minPercent: 0,
             title: "Thanks for Playing! ❤️",
             message: "We're glad you took the quiz! Visit our website to discover more about our community programs.",
             ctaText: "Visit Lancaster Hub",
-            ctaUrl: "https://lancasterhub.org/"
+            ctaUrl: "https://lancasterhub.org/",
+            image: ""
           }
         ]
       },
@@ -542,7 +571,6 @@
     let selectedOption = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // Clear legacy storage overrides so server quiz updates load instantly
       localStorage.removeItem("custom_quiz_data");
 
       if (window.lucide) {
@@ -551,7 +579,6 @@
 
       applyColorTheme(quizData.primaryColor, quizData.primaryHover);
 
-      // Auto-detect iframe or URL parameter to auto-hide navigation header
       const urlParams = new URLSearchParams(window.location.search);
       const isEmbedded = window.self !== window.top;
       
@@ -647,14 +674,12 @@
 
       document.getElementById("question-text-display").innerText = q.question;
 
-      // Reset Feedback Box
       const feedbackBox = document.getElementById("feedback-box");
       const imgContainer = document.getElementById("explanation-image-container");
       feedbackBox.classList.add("hidden");
       imgContainer.classList.add("hidden");
       document.getElementById("next-btn").disabled = true;
 
-      // Render Options
       const container = document.getElementById("options-container");
       container.innerHTML = "";
       selectedOption = null;
@@ -701,7 +726,6 @@
 
       feedbackBox.classList.remove("hidden");
 
-      // Handle Fitted Explanation Image
       if (q.image && q.image.trim() !== "") {
         imgElem.src = q.image;
         imgContainer.classList.remove("hidden");
@@ -767,12 +791,31 @@
           title: "Quiz Completed",
           message: "Thank you for taking the quiz!",
           ctaText: "",
-          ctaUrl: ""
+          ctaUrl: "",
+          image: ""
         };
       }
 
       document.getElementById("tier-title-display").innerText = matchedTier.title;
       document.getElementById("tier-description-display").innerText = matchedTier.message;
+
+      // Handle End Screen Visual (Tier Image overrides General End Screen Image)
+      const endImageContainer = document.getElementById("results-image-container");
+      const endImageElem = document.getElementById("results-image-element");
+      const trophyBadge = document.getElementById("result-badge-icon");
+
+      const imageUrlToDisplay = (matchedTier.image && matchedTier.image.trim() !== "") 
+        ? matchedTier.image.trim() 
+        : (cfg.image && cfg.image.trim() !== "" ? cfg.image.trim() : "");
+
+      if (imageUrlToDisplay) {
+        endImageElem.src = imageUrlToDisplay;
+        endImageContainer.classList.remove("hidden");
+        trophyBadge.classList.add("hidden");
+      } else {
+        endImageContainer.classList.add("hidden");
+        trophyBadge.classList.remove("hidden");
+      }
 
       // Handle Call To Action (CTA) Button
       const ctaBtn = document.getElementById("results-cta-btn");
@@ -787,7 +830,6 @@
         ctaBtn.classList.remove("flex");
       }
 
-      // Optional Confetti Animation
       if (cfg.enableConfetti && pct >= 70 && typeof confetti === "function") {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
@@ -808,13 +850,12 @@
       document.getElementById("builder-subtitle").value = quizData.subtitle;
       document.getElementById("question-count-badge").innerText = quizData.questions.length;
 
-      // End Screen Settings Render
       const cfg = quizData.resultsConfig || {};
       document.getElementById("builder-end-headline").value = cfg.headline || "";
       document.getElementById("builder-end-subtitle").value = cfg.subtitle || "";
+      document.getElementById("builder-end-image").value = cfg.image || "";
       document.getElementById("builder-end-confetti").checked = !!cfg.enableConfetti;
 
-      // Populate Tier Fields
       if (cfg.tiers) {
         cfg.tiers.forEach((tier, i) => {
           if (document.getElementById(`tier-${i}-title`)) {
@@ -822,11 +863,11 @@
             document.getElementById(`tier-${i}-msg`).value = tier.message || "";
             document.getElementById(`tier-${i}-cta-text`).value = tier.ctaText || "";
             document.getElementById(`tier-${i}-cta-url`).value = tier.ctaUrl || "";
+            document.getElementById(`tier-${i}-img`).value = tier.image || "";
           }
         });
       }
 
-      // Populate Questions List
       const container = document.getElementById("questions-builder-list");
       container.innerHTML = "";
 
@@ -881,6 +922,7 @@
       if (!quizData.resultsConfig) quizData.resultsConfig = {};
       quizData.resultsConfig.headline = document.getElementById("builder-end-headline").value;
       quizData.resultsConfig.subtitle = document.getElementById("builder-end-subtitle").value;
+      quizData.resultsConfig.image = document.getElementById("builder-end-image").value;
       quizData.resultsConfig.enableConfetti = document.getElementById("builder-end-confetti").checked;
     }
 
@@ -890,6 +932,7 @@
       quizData.resultsConfig.tiers[index].message = document.getElementById(`tier-${index}-msg`).value;
       quizData.resultsConfig.tiers[index].ctaText = document.getElementById(`tier-${index}-cta-text`).value;
       quizData.resultsConfig.tiers[index].ctaUrl = document.getElementById(`tier-${index}-cta-url`).value;
+      quizData.resultsConfig.tiers[index].image = document.getElementById(`tier-${index}-img`).value;
     }
 
     function addQuestion() {
