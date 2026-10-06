@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Quiz Application</title>
+  <title>Fall in love with the Lancaster Hub!</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Canvas Confetti -->
@@ -37,8 +37,8 @@
 <body class="bg-gray-50 text-gray-800 min-h-screen font-sans antialiased pb-12">
 
   <div id="app" class="max-w-4xl mx-auto px-4 py-8">
-    <!-- Navigation / Header -->
-    <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+    <!-- Navigation / Header (Hidden when ?mode=take is passed in URL) -->
+    <header id="main-header" class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-3">
         <div id="brand-badge" class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md" style="background-color: var(--primary-color);">
           Q
@@ -63,11 +63,11 @@
       <!-- Quiz Progress Bar & Header -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
         <div class="flex items-center justify-between text-sm font-medium text-gray-500">
-          <span id="quiz-progress-text">Question 1 of 5</span>
+          <span id="quiz-progress-text">Question 1 of 10</span>
           <span id="quiz-score-live" class="font-semibold custom-text-primary">Score: 0</span>
         </div>
         <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-          <div id="quiz-progress-bar" class="h-full transition-all duration-300 rounded-full" style="width: 20%; background-color: var(--primary-color);"></div>
+          <div id="quiz-progress-bar" class="h-full transition-all duration-300 rounded-full" style="width: 10%; background-color: var(--primary-color);"></div>
         </div>
       </div>
 
@@ -90,8 +90,8 @@
           </div>
 
           <!-- Explanation Image Container (Shown on Answer) -->
-          <div id="explanation-image-container" class="hidden rounded-xl overflow-hidden max-h-72 border border-gray-200 mt-3 shadow-sm">
-            <img id="explanation-image-element" src="" alt="Explanation Visual" class="w-full h-full object-cover">
+          <div id="explanation-image-container" class="hidden rounded-xl overflow-hidden max-h-80 border border-gray-200 mt-3 shadow-sm">
+            <img id="explanation-image-element" src="" alt="Explanation Visual" class="w-full h-64 object-cover">
           </div>
         </div>
 
@@ -215,38 +215,142 @@
   </div>
 
   <script>
-    // Initial Quiz State
+    // Initial Quiz Data
     let quizData = {
-      title: "Lancaster Community Quiz",
-      subtitle: "Test your knowledge about our programs & impact",
+      title: "Fall in love with the Lancaster Hub!",
+      subtitle: "Think you know the Lancaster Hub? Test your knowledge!",
       primaryColor: "#dc2626",
       primaryHover: "#b91c1c",
       questions: [
         {
           id: 1,
-          question: "What is the primary mission of our Food Farmacy program?",
-          image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80",
+          question: "What was the first name of the Lancaster Hub?",
+          image: "https://lancasterhub.org/wp-content/uploads/10-years.png",
           options: [
-            "Providing fresh produce & healthy nutritional support to families in need",
-            "Hosting fast-food cooking events",
-            "Selling organic vegetables to local grocery stores",
-            "Teaching gardening classes for commercial farms"
+            "Lancaster County Food Hub",
+            "Lancaster County Council of Churches",
+            "United Churches of Lancaster County",
+            "Lancaster Clothing and Food Pantry"
           ],
-          correct: 0,
-          explanation: "The Food Farmacy provides nutritious food and health resources to local community members!"
+          correct: 2,
+          explanation: "The original name for the Lancaster Hub was the United Churches of Lancaster! The name was changed to the Lancaster county Council of Churches because it was getting confused with United Church of Christ."
         },
         {
           id: 2,
-          question: "How can volunteers get involved in supporting the community hub?",
-          image: "",
+          question: "When was the Lancaster Hub founded?",
+          image: "https://lancasterhub.org/wp-content/uploads/new-group-1947-scaled-1.png",
           options: [
-            "By donating clothing and fresh food items",
-            "By helping pack and distribute food boxes",
-            "By offering time to support outreach programs",
+            "1947",
+            "1943",
+            "1934",
+            "1956"
+          ],
+          correct: 0,
+          explanation: "In May of 1947, representatives from 38 charter member congregations formed the United Churches of Lancaster County, which would become the Lancaster Hub."
+        },
+        {
+          id: 1791295852160,
+          question: "What was the first community resource offered by the Lancaster Hub?",
+          image: "https://lancasterhub.org/wp-content/uploads/EG-tamara-scaled.jpg",
+          options: [
+            "Food pantry",
+            "Job training",
+            "Clothing bank",
+            "Help line"
+          ],
+          correct: 2,
+          explanation: "Beginning in 1947, the United Churches of Lancaster created a local network and clothing pantry to support recently arrived refugees from World War II."
+        },
+        {
+          id: 1791296000686,
+          question: "In the 1960s, the Lancaster Hub created a 24-hour phone helpline called CONTACT Lancaster. What service did this eventually become?",
+          image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkv7FyqxXaMBYU9nWOhzqEMa3in06G_EyO-S6ljBBOvH1hdo4c49A-WgA&s=10",
+          options: [
+            "4-1-1",
+            "2-1-1",
+            "LancasterHelps",
+            "Red Rose Support"
+          ],
+          correct: 1,
+          explanation: "Managed by the United Way of Lancaster County, 2-1-1 provides services and information to residents across Lancaster County."
+        },
+        {
+          id: 1791296000886,
+          question: "How many pounds of food did the Lancaster Hub process in 2025?",
+          image: "https://images.pexels.com/photos/9599929/pexels-photo-9599929.jpeg",
+          options: [
+            "1 million pounds",
+            "800,000 pounds",
+            "1.2 million pounds",
+            "1.4 million pounds"
+          ],
+          correct: 3,
+          explanation: "Thanks to the extraordinary generosity of the Lancaster County community, the Lancaster Hub processed more than 1.4 million pounds of food to distribute to Neighbors."
+        },
+        {
+          id: 1791296001059,
+          question: "Put another way, how many fully-occupied school buses does that equate to?",
+          image: "https://images.pexels.com/photos/9599929/pexels-photo-9599929.jpeg",
+          options: [
+            "30 school buses",
+            "35 school buses",
+            "45 school buses",
+            "50 school buses"
+          ],
+          correct: 3,
+          explanation: "1.4 million pounds of food is equal to 50 school buses full of people! Thank you to all the Neighbors who have helped the Lancaster Hub grow."
+        },
+        {
+          id: 1791296001226,
+          question: "How many volunteers help the Lancaster Hub operate?",
+          image: "https://lancasterhub.org/wp-content/uploads/IMG_5683.jpg",
+          options: [
+            "~30",
+            "~140",
+            "~120",
+            "~50"
+          ],
+          correct: 1,
+          explanation: "The Hub is community-powered: than 140 volunteers help the Lancaster Hub run each day. The time given to the Hub is equal to nearly 9 full time employees! Thank you to our amazing volunteers!"
+        },
+        {
+          id: 1791296959879,
+          question: "Which service can Neighbors receive at the Lancaster Hub's 2nd floor day center?",
+          image: "https://lancasterhub.org/wp-content/uploads/doug-scaled.jpg",
+          options: [
+            "Getting government documents",
+            "Applying for housing",
+            "Applying for jobs",
             "All of the above"
           ],
           correct: 3,
-          explanation: "Volunteers support us through donations, food packing, and active program participation!"
+          explanation: "The Lancaster Hub's outreach navigators work with Neighbors of all experiences and circumstances to figure out the right next step towards thriving."
+        },
+        {
+          id: 1791296960207,
+          question: "Which service can Neighbors receive at the Lancaster Hub's 2nd floor day center (part 2!)",
+          image: "https://lancasterhub.org/wp-content/uploads/refresh-lancaster.jpg",
+          options: [
+            "Shower and hygiene",
+            "Haircuts",
+            "Physician consults",
+            "All of the above"
+          ],
+          correct: 3,
+          explanation: "The Lancaster Hub's day center partners with local services like Refresh Lancaster, LGH, and local salon owners to provide hygienic care to Neighbors."
+        },
+        {
+          id: 1791296960571,
+          question: "With your help and trust, the Lancaster Hub strives to be a doorway to dignity, hope and ____",
+          image: "https://lancasterhub.org/wp-content/uploads/huddle-cropped.png",
+          options: [
+            "Help",
+            "Stability",
+            "Balance",
+            "Happiness"
+          ],
+          correct: 1,
+          explanation: "The Lancaster Hub is rooted in belief that all Neighbors deserve the essentials of a fulfilling life, and that stability is the pivotal step to thriving."
         }
       ]
     };
@@ -255,14 +359,17 @@
     let score = 0;
     let selectedOption = null;
 
-    // Load saved quiz from localStorage if available
     document.addEventListener("DOMContentLoaded", () => {
-      const saved = localStorage.getItem("custom_quiz_data");
-      if (saved) {
-        try { quizData = JSON.parse(saved); } catch(e){}
-      }
       lucide.createIcons();
       applyColorTheme(quizData.primaryColor, quizData.primaryHover);
+
+      // Check if URL requests hiding the header/builder navigation
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'take' || urlParams.get('hideNav') === 'true') {
+        const headerElem = document.getElementById("main-header");
+        if (headerElem) headerElem.style.display = 'none';
+      }
+
       renderTakeQuiz();
       renderBuilder();
     });
@@ -277,7 +384,6 @@
       quizData.primaryHover = hover;
       document.documentElement.style.setProperty('--primary-color', primary);
       document.documentElement.style.setProperty('--primary-hover', hover);
-      saveToLocalStorage();
     }
 
     // Export & Import Functions
@@ -301,7 +407,6 @@
           if (imported.title && Array.isArray(imported.questions)) {
             quizData = imported;
             applyColorTheme(quizData.primaryColor || "#dc2626", quizData.primaryHover || "#b91c1c");
-            saveToLocalStorage();
             renderTakeQuiz();
             renderBuilder();
             alert("Quiz loaded successfully!");
@@ -521,7 +626,6 @@
     function updateQuizMeta() {
       quizData.title = document.getElementById("builder-title").value;
       quizData.subtitle = document.getElementById("builder-subtitle").value;
-      saveToLocalStorage();
     }
 
     function addQuestion() {
@@ -533,7 +637,6 @@
         correct: 0,
         explanation: ""
       });
-      saveToLocalStorage();
       renderBuilder();
     }
 
@@ -543,15 +646,14 @@
         return;
       }
       quizData.questions.splice(index, 1);
-      saveToLocalStorage();
       renderBuilder();
     }
 
-    function updateQuestionText(qIndex, val) { quizData.questions[qIndex].question = val; saveToLocalStorage(); }
-    function updateQuestionImage(qIndex, val) { quizData.questions[qIndex].image = val; saveToLocalStorage(); }
-    function setCorrectAnswer(qIndex, oIndex) { quizData.questions[qIndex].correct = oIndex; saveToLocalStorage(); }
-    function updateOptionText(qIndex, oIndex, val) { quizData.questions[qIndex].options[oIndex] = val; saveToLocalStorage(); }
-    function updateExplanation(qIndex, val) { quizData.questions[qIndex].explanation = val; saveToLocalStorage(); }
+    function updateQuestionText(qIndex, val) { quizData.questions[qIndex].question = val; }
+    function updateQuestionImage(qIndex, val) { quizData.questions[qIndex].image = val; }
+    function setCorrectAnswer(qIndex, oIndex) { quizData.questions[qIndex].correct = oIndex; }
+    function updateOptionText(qIndex, oIndex, val) { quizData.questions[qIndex].options[oIndex] = val; }
+    function updateExplanation(qIndex, val) { quizData.questions[qIndex].explanation = val; }
   </script>
 </body>
 </html>
