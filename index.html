@@ -37,7 +37,7 @@
 <body class="bg-gray-50 text-gray-800 min-h-screen font-sans antialiased pb-12">
 
   <div id="app" class="max-w-4xl mx-auto px-4 py-8">
-    <!-- Navigation / Header (Hidden when ?mode=take is passed in URL) -->
+    <!-- Navigation / Header -->
     <header id="main-header" class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-3">
         <div id="brand-badge" class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md" style="background-color: var(--primary-color);">
@@ -215,7 +215,7 @@
   </div>
 
   <script>
-    // Initial Quiz Data
+    // Master Quiz Data
     let quizData = {
       title: "Fall in love with the Lancaster Hub!",
       subtitle: "Think you know the Lancaster Hub? Test your knowledge!",
@@ -360,12 +360,17 @@
     let selectedOption = null;
 
     document.addEventListener("DOMContentLoaded", () => {
+      // Clear legacy storage to prevent stale quiz overrides
+      localStorage.removeItem("custom_quiz_data");
+
       lucide.createIcons();
       applyColorTheme(quizData.primaryColor, quizData.primaryHover);
 
-      // Check if URL requests hiding the header/builder navigation
+      // Check URL params OR check if we are loaded in WordPress/iframe to hide header
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('mode') === 'take' || urlParams.get('hideNav') === 'true') {
+      const isEmbedded = window.self !== window.top; // Auto-detect iframe
+      
+      if (urlParams.get('mode') === 'take' || urlParams.get('hideNav') === 'true' || isEmbedded) {
         const headerElem = document.getElementById("main-header");
         if (headerElem) headerElem.style.display = 'none';
       }
@@ -373,10 +378,6 @@
       renderTakeQuiz();
       renderBuilder();
     });
-
-    function saveToLocalStorage() {
-      localStorage.setItem("custom_quiz_data", JSON.stringify(quizData));
-    }
 
     // Theme Switcher
     function applyColorTheme(primary, hover) {
@@ -390,270 +391,4 @@
     function exportQuizJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quizData, null, 2));
       const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `${quizData.title.toLowerCase().replace(/\s+/g, '_')}_quiz.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importQuizJSON(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (imported.title && Array.isArray(imported.questions)) {
-            quizData = imported;
-            applyColorTheme(quizData.primaryColor || "#dc2626", quizData.primaryHover || "#b91c1c");
-            renderTakeQuiz();
-            renderBuilder();
-            alert("Quiz loaded successfully!");
-          } else {
-            alert("Invalid quiz JSON file structure.");
-          }
-        } catch(err) {
-          alert("Error parsing JSON file.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function copyQuizCode() {
-      const code = JSON.stringify(quizData, null, 2);
-      navigator.clipboard.writeText(code).then(() => {
-        alert("Quiz configuration copied to clipboard!");
-      });
-    }
-
-    // View Navigation
-    function switchView(view) {
-      const takeView = document.getElementById("view-take");
-      const resultsView = document.getElementById("view-results");
-      const builderView = document.getElementById("view-builder");
-
-      const takeBtn = document.getElementById("nav-take-btn");
-      const builderBtn = document.getElementById("nav-builder-btn");
-
-      takeView.classList.add("hidden");
-      resultsView.classList.add("hidden");
-      builderView.classList.add("hidden");
-
-      if (view === "take") {
-        takeView.classList.remove("hidden");
-        takeBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 custom-btn-primary";
-        builderBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2";
-        renderTakeQuiz();
-      } else if (view === "builder") {
-        builderView.classList.remove("hidden");
-        builderBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 custom-btn-primary";
-        takeBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2";
-        renderBuilder();
-      }
-    }
-
-    // Quiz Runner Render
-    function renderTakeQuiz() {
-      const q = quizData.questions[currentQuestionIndex];
-      if (!q) return;
-
-      document.getElementById("app-title-display").innerText = quizData.title;
-      document.getElementById("app-subtitle-display").innerText = quizData.subtitle;
-
-      document.getElementById("quiz-progress-text").innerText = `Question ${currentQuestionIndex + 1} of ${quizData.questions.length}`;
-      document.getElementById("quiz-progress-bar").style.width = `${((currentQuestionIndex + 1) / quizData.questions.length) * 100}%`;
-      document.getElementById("quiz-score-live").innerText = `Score: ${score}`;
-
-      document.getElementById("question-text-display").innerText = q.question;
-
-      // Reset Feedback & Next Button
-      const feedbackBox = document.getElementById("feedback-box");
-      const imgContainer = document.getElementById("explanation-image-container");
-      feedbackBox.classList.add("hidden");
-      imgContainer.classList.add("hidden");
-      document.getElementById("next-btn").disabled = true;
-
-      // Render Options
-      const container = document.getElementById("options-container");
-      container.innerHTML = "";
-      selectedOption = null;
-
-      q.options.forEach((opt, idx) => {
-        const btn = document.createElement("button");
-        btn.className = "w-full text-left p-4 rounded-xl border border-gray-200 hover:border-gray-300 bg-white font-medium text-gray-800 transition flex items-center justify-between group";
-        btn.onclick = () => selectOption(idx);
-        btn.id = `opt-btn-${idx}`;
-        btn.innerHTML = `
-          <span>${opt}</span>
-          <span class="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-gray-400">
-            <span class="w-2.5 h-2.5 rounded-full bg-transparent"></span>
-          </span>
-        `;
-        container.appendChild(btn);
-      });
-    }
-
-    function selectOption(idx) {
-      const q = quizData.questions[currentQuestionIndex];
-      if (selectedOption !== null) return;
-      selectedOption = idx;
-
-      const isCorrect = idx === q.correct;
-      if (isCorrect) score++;
-
-      q.options.forEach((_, i) => {
-        const btn = document.getElementById(`opt-btn-${i}`);
-        btn.disabled = true;
-        if (i === q.correct) {
-          btn.className = "w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold flex items-center justify-between";
-        } else if (i === idx && !isCorrect) {
-          btn.className = "w-full text-left p-4 rounded-xl border-2 border-red-500 bg-red-50 text-red-900 font-semibold flex items-center justify-between";
-        } else {
-          btn.className = "w-full text-left p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 opacity-60 flex items-center justify-between";
-        }
-      });
-
-      const feedbackBox = document.getElementById("feedback-box");
-      const feedbackText = document.getElementById("feedback-text");
-      const imgContainer = document.getElementById("explanation-image-container");
-      const imgElem = document.getElementById("explanation-image-element");
-
-      feedbackBox.classList.remove("hidden");
-
-      // Display image inside explanation box if available
-      if (q.image && q.image.trim() !== "") {
-        imgElem.src = q.image;
-        imgContainer.classList.remove("hidden");
-      } else {
-        imgContainer.classList.add("hidden");
-      }
-
-      if (isCorrect) {
-        feedbackBox.className = "p-4 rounded-xl text-sm font-medium flex flex-col gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200";
-        feedbackText.innerText = `Correct! ${q.explanation || ''}`;
-      } else {
-        feedbackBox.className = "p-4 rounded-xl text-sm font-medium flex flex-col gap-2 bg-red-50 text-red-800 border border-red-200";
-        feedbackText.innerText = `Incorrect. ${q.explanation || ''}`;
-      }
-
-      document.getElementById("next-btn").disabled = false;
-      document.getElementById("quiz-score-live").innerText = `Score: ${score}`;
-    }
-
-    function nextQuestion() {
-      if (currentQuestionIndex < quizData.questions.length - 1) {
-        currentQuestionIndex++;
-        renderTakeQuiz();
-      } else {
-        showResults();
-      }
-    }
-
-    function showResults() {
-      document.getElementById("view-take").classList.add("hidden");
-      document.getElementById("view-results").classList.remove("hidden");
-
-      const total = quizData.questions.length;
-      const pct = Math.round((score / total) * 100);
-
-      document.getElementById("final-score-text").innerText = `${score} / ${total}`;
-      document.getElementById("final-percentage-text").innerText = `${pct}% Correct`;
-
-      if (pct >= 70 && typeof confetti === "function") {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      }
-    }
-
-    function restartQuiz() {
-      currentQuestionIndex = 0;
-      score = 0;
-      document.getElementById("view-results").classList.add("hidden");
-      document.getElementById("view-take").classList.remove("hidden");
-      renderTakeQuiz();
-    }
-
-    // Builder Render
-    function renderBuilder() {
-      document.getElementById("builder-title").value = quizData.title;
-      document.getElementById("builder-subtitle").value = quizData.subtitle;
-
-      const container = document.getElementById("questions-builder-list");
-      container.innerHTML = "";
-
-      quizData.questions.forEach((q, qIndex) => {
-        const card = document.createElement("div");
-        card.className = "bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4";
-        card.innerHTML = `
-          <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-            <span class="font-bold text-gray-700 text-sm">Question #${qIndex + 1}</span>
-            <button onclick="removeQuestion(${qIndex})" class="text-red-500 hover:text-red-700 text-xs font-semibold flex items-center gap-1">
-              <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
-            </button>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Question Prompt</label>
-            <input type="text" value="${q.question}" oninput="updateQuestionText(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-xs font-semibold text-gray-600 uppercase">Answer Options (Select correct radio)</label>
-            ${q.options.map((opt, oIndex) => `
-              <div class="flex items-center gap-2">
-                <input type="radio" name="correct-${qIndex}" ${q.correct === oIndex ? 'checked' : ''} onchange="setCorrectAnswer(${qIndex},${oIndex})" class="w-4 h-4 text-red-600 focus:ring-red-500">
-                <input type="text" value="${opt}" oninput="updateOptionText(${qIndex},${oIndex}, this.value)" class="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-              </div>
-            `).join('')}
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Explanation (Optional)</label>
-            <input type="text" value="${q.explanation || ''}" oninput="updateExplanation(${qIndex}, this.value)" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Shown after user answers">
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Explanation Image URL (Optional)</label>
-            <input type="text" value="${q.image || ''}" oninput="updateQuestionImage(${qIndex}, this.value)" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      lucide.createIcons();
-    }
-
-    function updateQuizMeta() {
-      quizData.title = document.getElementById("builder-title").value;
-      quizData.subtitle = document.getElementById("builder-subtitle").value;
-    }
-
-    function addQuestion() {
-      quizData.questions.push({
-        id: Date.now(),
-        question: "New Question",
-        image: "",
-        options: ["Option 1", "Option 2", "Option 3", "Option 4"],
-        correct: 0,
-        explanation: ""
-      });
-      renderBuilder();
-    }
-
-    function removeQuestion(index) {
-      if (quizData.questions.length <= 1) {
-        alert("Your quiz must have at least one question!");
-        return;
-      }
-      quizData.questions.splice(index, 1);
-      renderBuilder();
-    }
-
-    function updateQuestionText(qIndex, val) { quizData.questions[qIndex].question = val; }
-    function updateQuestionImage(qIndex, val) { quizData.questions[qIndex].image = val; }
-    function setCorrectAnswer(qIndex, oIndex) { quizData.questions[qIndex].correct = oIndex; }
-    function updateOptionText(qIndex, oIndex, val) { quizData.questions[qIndex].options[oIndex] = val; }
-    function updateExplanation(qIndex, val) { quizData.questions[qIndex].explanation = val; }
-  </script>
-</body>
-</html>
+      download
