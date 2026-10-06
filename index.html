@@ -42,17 +42,6 @@
       background-color: color-mix(in srgb, var(--primary-color) 12%, transparent);
     }
 
-    /* Smooth transitions */
-    .fade-enter {
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-    }
-    .fade-enter-active {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
     /* Custom Toast Banner */
     #toast-container {
       position: fixed;
@@ -136,7 +125,7 @@
     </main>
 
     <!-- VIEW: QUIZ RESULTS -->
-    <section id="view-results" class="hidden bg-white rounded-2xl p-8 sm:p-12 shadow-sm border border-gray-100 text-center space-y-8 fade-enter">
+    <section id="view-results" class="hidden bg-white rounded-2xl p-8 sm:p-12 shadow-sm border border-gray-100 text-center space-y-8">
       <div id="result-badge-icon" class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto custom-bg-primary-light shadow-sm">
         <i data-lucide="trophy" class="w-10 h-10 custom-text-primary"></i>
       </div>
@@ -743,7 +732,9 @@
 
     function showResults() {
       document.getElementById("view-take").classList.add("hidden");
-      document.getElementById("view-results").classList.remove("hidden");
+      
+      const resultsView = document.getElementById("view-results");
+      resultsView.classList.remove("hidden");
 
       const total = quizData.questions.length;
       const pct = Math.round((score / total) * 100);
