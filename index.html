@@ -1,394 +1,352 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fall in love with the Lancaster Hub!</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    :root {
-      --primary-color: #dc2626;
-      --primary-hover: #b91c1c;
-      --accent-color: #1f2937;
+<!-- ... existing code ... -->
+<script>
+// Default Quiz Data for Lancaster Hub Quiz
+const DEFAULT_QUIZ = {
+  title: "Lancaster Hub Community Quiz",
+  description: "Test your knowledge about Lancaster, Pennsylvania's history, landmarks, and community culture!",
+  theme: {
+    primaryColor: "#059669", // Emerald green
+    accentColor: "#d97706", // Amber
+    fontFamily: "Inter, sans-serif"
+  },
+  endScreen: {
+    title: "Quiz Completed!",
+    subtitle: "Thanks for testing your knowledge on Lancaster Hub!",
+    showConfetti: true,
+    highScoreTier: {
+      minScore: 70,
+      title: "Lancaster Local Legend! 🏆",
+      message: "Outstanding job! You know Lancaster inside and out. Your dedication to our local community shines bright!",
+      mediaEmoji: "🎉",
+      ctaText: "Support Lancaster Hub",
+      ctaUrl: "https://lancasterhub.org/donate"
+    },
+    mediumScoreTier: {
+      minScore: 40,
+      title: "Community Champion! 🌟",
+      message: "Great effort! You know a solid amount about Lancaster's rich culture and heritage.",
+      mediaEmoji: "👏",
+      ctaText: "Learn More About Lancaster Hub",
+      ctaUrl: "https://lancasterhub.org/about"
+    },
+    lowScoreTier: {
+      minScore: 0,
+      title: "Lancaster Explorer! 🧭",
+      message: "Nice try! Lancaster has so much rich history and vibrant community spots waiting for you to discover.",
+      mediaEmoji: "🌱",
+      ctaText: "Discover Lancaster Hub",
+      ctaUrl: "https://lancasterhub.org"
     }
-    .custom-btn-primary {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    .custom-btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
-    .custom-border-primary {
-      border-color: var(--primary-color);
-    }
-    .custom-text-primary {
-      color: var(--primary-color);
-    }
-    .custom-bg-primary-light {
-      background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
-    }
-  </style>
-</head>
-<body class="bg-gray-50 text-gray-800 min-h-screen font-sans antialiased pb-12">
+  },
+  questions: [
+<!-- ... existing code ... -->
+  <!-- ... existing code ... -->
+    <div id="builderNavTabs" class="hidden flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-t-xl px-4 pt-2 gap-2">
+      <button onclick="switchBuilderTab('questions')" id="tabBtnQuestions" class="py-2 px-4 font-semibold text-sm rounded-t-lg border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-900 transition-colors">
+        Questions & Quiz Settings
+      </button>
+      <button onclick="switchBuilderTab('endscreen')" id="tabBtnEndscreen" class="py-2 px-4 font-semibold text-sm rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+        End / Results Screen Settings
+      </button>
+      <button onclick="switchBuilderTab('theme')" id="tabBtnTheme" class="py-2 px-4 font-semibold text-sm rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+        Theme & Colors
+      </button>
+    </div>
 
-  <div id="app" class="max-w-4xl mx-auto px-4 py-8">
-    <!-- Navigation / Header -->
-    <header id="main-header" class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-      <div class="flex items-center gap-3">
-        <div id="brand-badge" class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md" style="background-color: var(--primary-color);">
-          Q
+    <!-- BUILDER PANEL CONTENT -->
+    <div id="builderTabContent" class="hidden p-6 bg-white dark:bg-gray-900 rounded-b-xl border border-t-0 border-gray-200 dark:border-gray-800">
+      
+      <!-- TAB 1: QUESTIONS EDITOR -->
+      <div id="tabContentQuestions" class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Quiz Title</label>
+          <input type="text" id="builderQuizTitle" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700" oninput="updateQuizFromBuilder()">
         </div>
         <div>
-          <h1 id="app-title-display" class="font-bold text-gray-900 text-lg sm:text-xl">Interactive Quiz</h1>
-          <p id="app-subtitle-display" class="text-xs text-gray-500">Test your knowledge or build your own quiz</p>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Quiz Description</label>
+          <textarea id="builderQuizDesc" rows="2" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700" oninput="updateQuizFromBuilder()"></textarea>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="nav-take-btn" onclick="switchView('take')" class="px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 custom-btn-primary">
-          <i data-lucide="play" class="w-4 h-4"></i> Take Quiz
-        </button>
-        <button id="nav-builder-btn" onclick="switchView('builder')" class="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2">
-          <i data-lucide="edit-3" class="w-4 h-4"></i> Quiz Builder
+
+        <div id="questionsBuilderList" class="space-y-4"></div>
+
+        <button onclick="addQuestionToBuilder()" class="w-full py-3 border-2 border-dashed border-emerald-500 text-emerald-600 font-semibold rounded-lg hover:bg-emerald-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+          <span>+ Add New Question</span>
         </button>
       </div>
-    </header>
 
-    <!-- VIEW: TAKE QUIZ -->
-    <main id="view-take" class="space-y-6">
-      <!-- Quiz Progress Bar & Header -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
-        <div class="flex items-center justify-between text-sm font-medium text-gray-500">
-          <span id="quiz-progress-text">Question 1 of 10</span>
-          <span id="quiz-score-live" class="font-semibold custom-text-primary">Score: 0</span>
-        </div>
-        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-          <div id="quiz-progress-bar" class="h-full transition-all duration-300 rounded-full" style="width: 10%; background-color: var(--primary-color);"></div>
-        </div>
-      </div>
-
-      <!-- Question Card -->
-      <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 space-y-6">
-
-        <h2 id="question-text-display" class="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
-          Loading Question...
-        </h2>
-
-        <div id="options-container" class="grid gap-3">
-          <!-- Options dynamically rendered here -->
-        </div>
-
-        <!-- Explanation & Answer Box with Image -->
-        <div id="feedback-box" class="hidden p-5 rounded-xl text-sm font-medium space-y-3">
-          <div class="flex items-start gap-3">
-            <i id="feedback-icon" data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
-            <span id="feedback-text"></span>
-          </div>
-
-          <!-- Explanation Image Container (Shown on Answer) -->
-          <div id="explanation-image-container" class="hidden rounded-xl overflow-hidden max-h-80 border border-gray-200 mt-3 shadow-sm">
-            <img id="explanation-image-element" src="" alt="Explanation Visual" class="w-full h-64 object-cover">
-          </div>
-        </div>
-
-        <div class="flex justify-end pt-4">
-          <button id="next-btn" onclick="nextQuestion()" disabled class="px-6 py-3 rounded-xl font-semibold text-white transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed custom-btn-primary">
-            Next Question <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-    </main>
-
-    <!-- VIEW: QUIZ RESULTS -->
-    <section id="view-results" class="hidden bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center space-y-6">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto custom-bg-primary-light">
-        <i data-lucide="trophy" class="w-10 h-10 custom-text-primary"></i>
-      </div>
-      
-      <div class="space-y-2">
-        <h2 class="text-3xl font-extrabold text-gray-900">Quiz Completed!</h2>
-        <p class="text-gray-500 text-sm">Here is how you performed:</p>
-      </div>
-
-      <div class="py-4">
-        <div class="text-5xl font-black custom-text-primary" id="final-score-text">0 / 0</div>
-        <p class="text-sm font-medium text-gray-500 mt-2" id="final-percentage-text">0%</p>
-      </div>
-
-      <div class="flex justify-center gap-4">
-        <button onclick="restartQuiz()" class="px-6 py-3 rounded-xl font-semibold text-white transition flex items-center gap-2 custom-btn-primary">
-          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Retake Quiz
-        </button>
-      </div>
-    </section>
-
-    <!-- VIEW: BUILDER -->
-    <section id="view-builder" class="hidden space-y-8">
-      <!-- Export / Import Control Bar -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
-        <h2 class="text-xl font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center gap-2">
-          <i data-lucide="download" class="w-5 h-5 custom-text-primary"></i> Export & Save Quiz
-        </h2>
-        <p class="text-xs text-gray-500">Export your custom quiz data so you can save it, back it up, or load it anytime.</p>
-
-        <div class="flex flex-wrap gap-3 pt-2">
-          <button onclick="exportQuizJSON()" class="px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition flex items-center gap-2 custom-btn-primary">
-            <i data-lucide="file-output" class="w-4 h-4"></i> Export JSON File
-          </button>
-          
-          <label class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2 cursor-pointer">
-            <i data-lucide="file-input" class="w-4 h-4"></i> Import JSON File
-            <input type="file" id="import-json-input" accept=".json" onchange="importQuizJSON(event)" class="hidden">
-          </label>
-
-          <button onclick="copyQuizCode()" class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 transition flex items-center gap-2">
-            <i data-lucide="copy" class="w-4 h-4"></i> Copy Quiz Data (Code)
-          </button>
-        </div>
-      </div>
-
-      <!-- General Settings -->
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
-        <h2 class="text-xl font-bold text-gray-900 border-b border-gray-100 pb-4 flex items-center gap-2">
-          <i data-lucide="settings" class="w-5 h-5 custom-text-primary"></i> Quiz & Appearance Settings
-        </h2>
-
+      <!-- TAB 2: END SCREEN CUSTOMIZATION -->
+      <div id="tabContentEndscreen" class="hidden space-y-6">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 border-b pb-2 dark:border-gray-700">General End Screen Settings</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Quiz Title</label>
-            <input type="text" id="builder-title" oninput="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Community Knowledge Quiz">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Header Title</label>
+            <input type="text" id="builderEndTitle" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700" oninput="updateQuizFromBuilder()">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Subtitle / Description</label>
-            <input type="text" id="builder-subtitle" oninput="updateQuizMeta()" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" placeholder="e.g. Test how much you know about our mission">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Subtitle</label>
+            <input type="text" id="builderEndSubtitle" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700" oninput="updateQuizFromBuilder()">
           </div>
         </div>
 
-        <!-- Color Preset Selector -->
-        <div>
-          <label class="block text-xs font-semibold text-gray-600 uppercase mb-2">Color Theme Palette</label>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <button onclick="applyColorTheme('#dc2626', '#b91c1c')" class="p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-2 hover:border-red-500 transition">
-              <span class="w-6 h-6 rounded-full bg-red-600 shadow-sm"></span>
-              <span class="text-xs font-medium text-gray-700">Hub Red</span>
-            </button>
-            <button onclick="applyColorTheme('#4f46e5', '#4338ca')" class="p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-2 hover:border-indigo-500 transition">
-              <span class="w-6 h-6 rounded-full bg-indigo-600 shadow-sm"></span>
-              <span class="text-xs font-medium text-gray-700">Indigo</span>
-            </button>
-            <button onclick="applyColorTheme('#059669', '#047857')" class="p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-2 hover:border-emerald-500 transition">
-              <span class="w-6 h-6 rounded-full bg-emerald-600 shadow-sm"></span>
-              <span class="text-xs font-medium text-gray-700">Emerald</span>
-            </button>
-            <button onclick="applyColorTheme('#2563eb', '#1d4ed8')" class="p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-2 hover:border-blue-500 transition">
-              <span class="w-6 h-6 rounded-full bg-blue-600 shadow-sm"></span>
-              <span class="text-xs font-medium text-gray-700">Ocean Blue</span>
-            </button>
-            <button onclick="applyColorTheme('#d97706', '#b45309')" class="p-3 rounded-xl border border-gray-200 flex flex-col items-center gap-2 hover:border-amber-500 transition">
-              <span class="w-6 h-6 rounded-full bg-amber-600 shadow-sm"></span>
-              <span class="text-xs font-medium text-gray-700">Amber</span>
-            </button>
+        <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <input type="checkbox" id="builderShowConfetti" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" onchange="updateQuizFromBuilder()">
+          <label for="builderShowConfetti" class="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">Enable Confetti Celebration Effect on High Score</label>
+        </div>
+
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 border-b pb-2 pt-4 dark:border-gray-700">Tiered Score Messages & Call to Actions</h3>
+
+        <!-- High Score Tier -->
+        <div class="p-4 border rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">🥇 High Score Tier (70% - 100%)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tier Headline</label>
+              <input type="text" id="builderHighTitle" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Emoji/Icon</label>
+              <input type="text" id="builderHighEmoji" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm text-center" oninput="updateQuizFromBuilder()">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Message</label>
+            <textarea id="builderHighMsg" rows="2" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()"></textarea>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Text (Optional)</label>
+              <input type="text" id="builderHighCtaText" placeholder="e.g. Donate to Lancaster Hub" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Link URL</label>
+              <input type="url" id="builderHighCtaUrl" placeholder="https://..." class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Medium Score Tier -->
+        <div class="p-4 border rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">🥈 Medium Score Tier (40% - 69%)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tier Headline</label>
+              <input type="text" id="builderMedTitle" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Emoji/Icon</label>
+              <input type="text" id="builderMedEmoji" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm text-center" oninput="updateQuizFromBuilder()">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Message</label>
+            <textarea id="builderMedMsg" rows="2" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()"></textarea>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Text (Optional)</label>
+              <input type="text" id="builderMedCtaText" placeholder="e.g. Learn More About Lancaster Hub" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Link URL</label>
+              <input type="url" id="builderMedCtaUrl" placeholder="https://..." class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Low Score Tier -->
+        <div class="p-4 border rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">🥉 Low Score Tier (0% - 39%)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tier Headline</label>
+              <input type="text" id="builderLowTitle" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Emoji/Icon</label>
+              <input type="text" id="builderLowEmoji" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm text-center" oninput="updateQuizFromBuilder()">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Message</label>
+            <textarea id="builderLowMsg" rows="2" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()"></textarea>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Text (Optional)</label>
+              <input type="text" id="builderLowCtaText" placeholder="e.g. Discover Lancaster Hub" class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">CTA Button Link URL</label>
+              <input type="url" id="builderLowCtaUrl" placeholder="https://..." class="w-full px-3 py-1.5 border rounded-lg dark:bg-gray-800 dark:text-white dark:border-gray-700 text-sm" oninput="updateQuizFromBuilder()">
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Question List Editor -->
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <i data-lucide="list-checks" class="w-5 h-5 custom-text-primary"></i> Questions
-          </h2>
-          <button onclick="addQuestion()" class="px-4 py-2 rounded-xl text-sm font-semibold text-white transition flex items-center gap-2 custom-btn-primary">
-            <i data-lucide="plus" class="w-4 h-4"></i> Add Question
-          </button>
-        </div>
-
-        <div id="questions-builder-list" class="space-y-6">
-          <!-- Dynamically populated question builder cards -->
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script>
-    // Master Quiz Data
-    let quizData = {
-      title: "Fall in love with the Lancaster Hub!",
-      subtitle: "Think you know the Lancaster Hub? Test your knowledge!",
-      primaryColor: "#dc2626",
-      primaryHover: "#b91c1c",
-      questions: [
-        {
-          id: 1,
-          question: "What was the first name of the Lancaster Hub?",
-          image: "https://lancasterhub.org/wp-content/uploads/10-years.png",
-          options: [
-            "Lancaster County Food Hub",
-            "Lancaster County Council of Churches",
-            "United Churches of Lancaster County",
-            "Lancaster Clothing and Food Pantry"
-          ],
-          correct: 2,
-          explanation: "The original name for the Lancaster Hub was the United Churches of Lancaster! The name was changed to the Lancaster county Council of Churches because it was getting confused with United Church of Christ."
-        },
-        {
-          id: 2,
-          question: "When was the Lancaster Hub founded?",
-          image: "https://lancasterhub.org/wp-content/uploads/new-group-1947-scaled-1.png",
-          options: [
-            "1947",
-            "1943",
-            "1934",
-            "1956"
-          ],
-          correct: 0,
-          explanation: "In May of 1947, representatives from 38 charter member congregations formed the United Churches of Lancaster County, which would become the Lancaster Hub."
-        },
-        {
-          id: 1791295852160,
-          question: "What was the first community resource offered by the Lancaster Hub?",
-          image: "https://lancasterhub.org/wp-content/uploads/EG-tamara-scaled.jpg",
-          options: [
-            "Food pantry",
-            "Job training",
-            "Clothing bank",
-            "Help line"
-          ],
-          correct: 2,
-          explanation: "Beginning in 1947, the United Churches of Lancaster created a local network and clothing pantry to support recently arrived refugees from World War II."
-        },
-        {
-          id: 1791296000686,
-          question: "In the 1960s, the Lancaster Hub created a 24-hour phone helpline called CONTACT Lancaster. What service did this eventually become?",
-          image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkv7FyqxXaMBYU9nWOhzqEMa3in06G_EyO-S6ljBBOvH1hdo4c49A-WgA&s=10",
-          options: [
-            "4-1-1",
-            "2-1-1",
-            "LancasterHelps",
-            "Red Rose Support"
-          ],
-          correct: 1,
-          explanation: "Managed by the United Way of Lancaster County, 2-1-1 provides services and information to residents across Lancaster County."
-        },
-        {
-          id: 1791296000886,
-          question: "How many pounds of food did the Lancaster Hub process in 2025?",
-          image: "https://images.pexels.com/photos/9599929/pexels-photo-9599929.jpeg",
-          options: [
-            "1 million pounds",
-            "800,000 pounds",
-            "1.2 million pounds",
-            "1.4 million pounds"
-          ],
-          correct: 3,
-          explanation: "Thanks to the extraordinary generosity of the Lancaster County community, the Lancaster Hub processed more than 1.4 million pounds of food to distribute to Neighbors."
-        },
-        {
-          id: 1791296001059,
-          question: "Put another way, how many fully-occupied school buses does that equate to?",
-          image: "https://images.pexels.com/photos/9599929/pexels-photo-9599929.jpeg",
-          options: [
-            "30 school buses",
-            "35 school buses",
-            "45 school buses",
-            "50 school buses"
-          ],
-          correct: 3,
-          explanation: "1.4 million pounds of food is equal to 50 school buses full of people! Thank you to all the Neighbors who have helped the Lancaster Hub grow."
-        },
-        {
-          id: 1791296001226,
-          question: "How many volunteers help the Lancaster Hub operate?",
-          image: "https://lancasterhub.org/wp-content/uploads/IMG_5683.jpg",
-          options: [
-            "~30",
-            "~140",
-            "~120",
-            "~50"
-          ],
-          correct: 1,
-          explanation: "The Hub is community-powered: than 140 volunteers help the Lancaster Hub run each day. The time given to the Hub is equal to nearly 9 full time employees! Thank you to our amazing volunteers!"
-        },
-        {
-          id: 1791296959879,
-          question: "Which service can Neighbors receive at the Lancaster Hub's 2nd floor day center?",
-          image: "https://lancasterhub.org/wp-content/uploads/doug-scaled.jpg",
-          options: [
-            "Getting government documents",
-            "Applying for housing",
-            "Applying for jobs",
-            "All of the above"
-          ],
-          correct: 3,
-          explanation: "The Lancaster Hub's outreach navigators work with Neighbors of all experiences and circumstances to figure out the right next step towards thriving."
-        },
-        {
-          id: 1791296960207,
-          question: "Which service can Neighbors receive at the Lancaster Hub's 2nd floor day center (part 2!)",
-          image: "https://lancasterhub.org/wp-content/uploads/refresh-lancaster.jpg",
-          options: [
-            "Shower and hygiene",
-            "Haircuts",
-            "Physician consults",
-            "All of the above"
-          ],
-          correct: 3,
-          explanation: "The Lancaster Hub's day center partners with local services like Refresh Lancaster, LGH, and local salon owners to provide hygienic care to Neighbors."
-        },
-        {
-          id: 1791296960571,
-          question: "With your help and trust, the Lancaster Hub strives to be a doorway to dignity, hope and ____",
-          image: "https://lancasterhub.org/wp-content/uploads/huddle-cropped.png",
-          options: [
-            "Help",
-            "Stability",
-            "Balance",
-            "Happiness"
-          ],
-          correct: 1,
-          explanation: "The Lancaster Hub is rooted in belief that all Neighbors deserve the essentials of a fulfilling life, and that stability is the pivotal step to thriving."
-        }
-      ]
-    };
-
-    let currentQuestionIndex = 0;
-    let score = 0;
-    let selectedOption = null;
-
-    document.addEventListener("DOMContentLoaded", () => {
-      // Clear legacy storage to prevent stale quiz overrides
-      localStorage.removeItem("custom_quiz_data");
-
-      lucide.createIcons();
-      applyColorTheme(quizData.primaryColor, quizData.primaryHover);
-
-      // Check URL params OR check if we are loaded in WordPress/iframe to hide header
-      const urlParams = new URLSearchParams(window.location.search);
-      const isEmbedded = window.self !== window.top; // Auto-detect iframe
-      
-      if (urlParams.get('mode') === 'take' || urlParams.get('hideNav') === 'true' || isEmbedded) {
-        const headerElem = document.getElementById("main-header");
-        if (headerElem) headerElem.style.display = 'none';
-      }
-
-      renderTakeQuiz();
-      renderBuilder();
-    });
-
-    // Theme Switcher
-    function applyColorTheme(primary, hover) {
-      quizData.primaryColor = primary;
-      quizData.primaryHover = hover;
-      document.documentElement.style.setProperty('--primary-color', primary);
-      document.documentElement.style.setProperty('--primary-hover', hover);
+      <!-- TAB 3: THEME & PALETTE EDITOR -->
+      <div id="tabContentTheme" class="hidden space-y-6">
+<!-- ... existing code ... -->
+<script>
+// Switch tabs in builder
+function switchBuilderTab(tab) {
+  const tabs = ['questions', 'endscreen', 'theme'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    const content = document.getElementById(`tabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (t === tab) {
+      btn.className = "py-2 px-4 font-semibold text-sm rounded-t-lg border-b-2 border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-gray-900 transition-colors";
+      content.classList.remove('hidden');
+    } else {
+      btn.className = "py-2 px-4 font-semibold text-sm rounded-t-lg border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors";
+      content.classList.add('hidden');
     }
+  });
+}
 
-    // Export & Import Functions
-    function exportQuizJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quizData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      download
+// Populate Builder UI with active quiz data
+function populateBuilderUI() {
+  document.getElementById('builderQuizTitle').value = activeQuiz.title || '';
+  document.getElementById('builderQuizDesc').value = activeQuiz.description || '';
+  
+  // End Screen Settings
+  const es = activeQuiz.endScreen || DEFAULT_QUIZ.endScreen;
+  document.getElementById('builderEndTitle').value = es.title || '';
+  document.getElementById('builderEndSubtitle').value = es.subtitle || '';
+  document.getElementById('builderShowConfetti').checked = es.showConfetti !== false;
+
+  // High Tier
+  document.getElementById('builderHighTitle').value = es.highScoreTier?.title || '';
+  document.getElementById('builderHighEmoji').value = es.highScoreTier?.mediaEmoji || '🎉';
+  document.getElementById('builderHighMsg').value = es.highScoreTier?.message || '';
+  document.getElementById('builderHighCtaText').value = es.highScoreTier?.ctaText || '';
+  document.getElementById('builderHighCtaUrl').value = es.highScoreTier?.ctaUrl || '';
+
+  // Med Tier
+  document.getElementById('builderMedTitle').value = es.mediumScoreTier?.title || '';
+  document.getElementById('builderMedEmoji').value = es.mediumScoreTier?.mediaEmoji || '🌟';
+  document.getElementById('builderMedMsg').value = es.mediumScoreTier?.message || '';
+  document.getElementById('builderMedCtaText').value = es.mediumScoreTier?.ctaText || '';
+  document.getElementById('builderMedCtaUrl').value = es.mediumScoreTier?.ctaUrl || '';
+
+  // Low Tier
+  document.getElementById('builderLowTitle').value = es.lowScoreTier?.title || '';
+  document.getElementById('builderLowEmoji').value = es.lowScoreTier?.mediaEmoji || '🌱';
+  document.getElementById('builderLowMsg').value = es.lowScoreTier?.message || '';
+  document.getElementById('builderLowCtaText').value = es.lowScoreTier?.ctaText || '';
+  document.getElementById('builderLowCtaUrl').value = es.lowScoreTier?.ctaUrl || '';
+
+  renderQuestionsBuilderList();
+}
+
+// Update Quiz Object from Builder Form Inputs
+function updateQuizFromBuilder() {
+  activeQuiz.title = document.getElementById('builderQuizTitle').value;
+  activeQuiz.description = document.getElementById('builderQuizDesc').value;
+
+  if (!activeQuiz.endScreen) activeQuiz.endScreen = {};
+  activeQuiz.endScreen.title = document.getElementById('builderEndTitle').value;
+  activeQuiz.endScreen.subtitle = document.getElementById('builderEndSubtitle').value;
+  activeQuiz.endScreen.showConfetti = document.getElementById('builderShowConfetti').checked;
+
+  activeQuiz.endScreen.highScoreTier = {
+    minScore: 70,
+    title: document.getElementById('builderHighTitle').value,
+    mediaEmoji: document.getElementById('builderHighEmoji').value,
+    message: document.getElementById('builderHighMsg').value,
+    ctaText: document.getElementById('builderHighCtaText').value,
+    ctaUrl: document.getElementById('builderHighCtaUrl').value
+  };
+
+  activeQuiz.endScreen.mediumScoreTier = {
+    minScore: 40,
+    title: document.getElementById('builderMedTitle').value,
+    mediaEmoji: document.getElementById('builderMedEmoji').value,
+    message: document.getElementById('builderMedMsg').value,
+    ctaText: document.getElementById('builderMedCtaText').value,
+    ctaUrl: document.getElementById('builderMedCtaUrl').value
+  };
+
+  activeQuiz.endScreen.lowScoreTier = {
+    minScore: 0,
+    title: document.getElementById('builderLowTitle').value,
+    mediaEmoji: document.getElementById('builderLowEmoji').value,
+    message: document.getElementById('builderLowMsg').value,
+    ctaText: document.getElementById('builderLowCtaText').value,
+    ctaUrl: document.getElementById('builderLowCtaUrl').value
+  };
+
+  saveQuizState();
+  if (currentStep === -1) {
+    renderStartScreen();
+  }
+}
+
+function renderResultsScreen() {
+  const container = document.getElementById('quizContentArea');
+  const total = activeQuiz.questions.length;
+  const pct = total > 0 ? Math.round((userScore / total) * 100) : 0;
+
+  const es = activeQuiz.endScreen || DEFAULT_QUIZ.endScreen;
+
+  // Determine Tier
+  let tier = es.lowScoreTier;
+  if (pct >= (es.highScoreTier?.minScore ?? 70)) {
+    tier = es.highScoreTier;
+  } else if (pct >= (es.mediumScoreTier?.minScore ?? 40)) {
+    tier = es.mediumScoreTier;
+  }
+
+  // Trigger confetti if high score and enabled
+  if (pct >= 70 && es.showConfetti !== false) {
+    triggerConfetti();
+  }
+
+  container.innerHTML = `
+    <div class="text-center space-y-6 max-w-xl mx-auto py-4 animate-fade-in">
+      <div class="text-6xl animate-bounce mb-2">${tier.mediaEmoji || '🎉'}</div>
+      
+      <div>
+        <h2 class="text-3xl font-extrabold text-gray-800 dark:text-gray-100">${es.title || 'Quiz Completed!'}</h2>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">${es.subtitle || 'Here is how you performed:'}</p>
+      </div>
+
+      <div class="p-6 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-center shadow-sm">
+        <p class="text-sm uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold mb-1">Your Score</p>
+        <div class="text-5xl font-black text-emerald-700 dark:text-emerald-300">${userScore} / ${total}</div>
+        <div class="text-lg font-semibold text-emerald-800 dark:text-emerald-200 mt-1">(${pct}%)</div>
+      </div>
+
+      <div class="p-5 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 text-left">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">${tier.title || ''}</h3>
+        <p class="text-gray-600 dark:text-gray-300 leading-relaxed text-base">${tier.message || ''}</p>
+      </div>
+
+      ${tier.ctaText && tier.ctaUrl ? `
+        <div class="pt-2">
+          <a href="${tier.ctaUrl}" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md transition-all hover:scale-105 w-full text-lg">
+            <span>${tier.ctaText}</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin=" His" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+      ` : ''}
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-4">
+        <button onclick="restartQuiz()" class="flex-1 py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all">
+          🔄 Retake Quiz
+        </button>
+        <button onclick="shareScore(${userScore}, ${total})" class="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-bold rounded-xl transition-all">
+          🔗 Share Results
+        </button>
+      </div>
+    </div>
+  `;
+}
+</script>
+<!-- ... existing code ... -->
